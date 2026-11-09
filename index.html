@@ -103,6 +103,25 @@
     .chip { padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; transition: transform .18s ease, border-color .18s ease, background .18s ease; }
     .chip:hover { transform: translateY(-2px); border-color: var(--accent); background: var(--accent-soft); }
     .work-status { min-height: 17px; margin: 3px 1px 8px; color: var(--muted); font-size: 11px; }
+    .assistant-workspace { min-width: 0; }
+    .waiting-game[hidden] { display: none !important; }
+    .waiting-game { display: flex; flex-direction: column; min-width: 0; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow); }
+    .waiting-game__heading { margin: 0; font-size: 14px; font-weight: 750; }
+    .waiting-game__hint { margin: 5px 0 12px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .waiting-game__stage { position: relative; height: 126px; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: var(--accent-soft); }
+    .waiting-game__ground { position: absolute; right: 0; bottom: 14px; left: 0; height: 1px; background: var(--muted); opacity: .5; }
+    .waiting-game__runner { position: absolute; bottom: 15px; left: 42px; z-index: 1; font-size: 27px; line-height: 1; user-select: none; }
+    .waiting-game__obstacle { position: absolute; bottom: 15px; width: 15px; border-radius: 4px 4px 2px 2px; background: var(--accent); }
+    .waiting-game__obstacle::before { position: absolute; top: 35%; left: -5px; width: 7px; height: 5px; border-radius: 3px 0 0 3px; background: var(--accent); content: ""; }
+    .waiting-game__score { margin: 10px 0; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+    .waiting-game__controls { display: flex; gap: 8px; margin-top: auto; }
+    .waiting-game__button { flex: 1; min-height: 38px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); font-size: 12px; font-weight: 700; cursor: pointer; }
+    .waiting-game__button--primary { border-color: var(--accent); background: var(--accent); color: #fff; }
+    body.is-started .local-preview { grid-template-columns: minmax(0, 1fr); align-content: start; }
+    body.is-started .local-preview__welcome { max-width: none; }
+    body.is-started .local-preview .report-sheet { display: none; }
+    body.is-started .assistant-workspace { display: grid; grid-template-columns: minmax(0, 1fr) 230px; align-items: stretch; gap: 14px; height: min(760px, calc(100vh - 170px)); }
+    body.is-started .chat-card { height: 100%; min-height: 0; }
     .composer { position: relative; display: flex; align-items: center; gap: 8px; }
     .composer input { min-width: 0; flex: 1; height: 46px; padding: 0 14px; border: 1px solid var(--line); border-radius: 12px; outline: none; background: var(--card); color: var(--ink); font-size: 13px; }
     .composer input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent); }
@@ -353,6 +372,9 @@
       h1 { font-size: clamp(42px, 12vw, 64px); }
       .hero-description { font-size: 15px; }
       .chat-card { border-radius: 16px; }
+      body.is-started .assistant-workspace { grid-template-columns: minmax(0, 1fr) minmax(150px, .7fr); gap: 8px; height: min(600px, calc(100vh - 150px)); }
+      .waiting-game { padding: 10px; }
+      .waiting-game__runner { left: 24px; }
       .chat-foot { padding: 10px; }
       .examples, .suggestions { gap: 6px; }
       .chip { font-size: 10px; }
@@ -370,7 +392,12 @@
       html[data-design="noir"] body { background-size: 64px 64px; }
       body.is-started .hero { min-height: min(820px, calc(100vh - 72px)); }
       body.is-started .hero-inner { min-height: 650px; }
-      body.is-started .chat-card { height: min(720px, calc(100vh - 125px)); }
+      body.is-started .chat-card { height: 100%; min-height: 0; }
+    }
+    @media (max-width: 560px) {
+      body.is-started .assistant-workspace { grid-template-columns: 1fr; height: auto; }
+      body.is-started .chat-card { min-height: 320px; height: min(520px, 65vh); }
+      .waiting-game { min-height: 250px; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
@@ -395,18 +422,33 @@
           <p class="hero-description" data-copy="description">실습 중 적어 둔 메모를 입력해 주세요. AIDE가 핵심 내용을 정리해 현장 실습 보고서 초안 작성을 도와드려요.</p>
           <div class="hero-meta"><span data-copy="metaOne">01 실습 메모 입력</span><span data-copy="metaTwo">02 함께 다듬고 완성</span></div>
         </div>
-        <section class="chat-card" aria-label="AI 에이전트 팀 대화창">
-          <div class="window-bar"><i class="window-dot"></i><i class="window-dot"></i><i class="window-dot"></i><span class="window-label" data-copy="chatTitle">AIDE 현장 실습 보고서 도우미</span></div>
-          <div id="webchat" aria-label="대화 내용"></div>
-          <div class="chat-foot">
-            <div class="examples" aria-label="예시 요청"><button class="chip" type="button" data-example-index="0">오늘 실습 메모 정리하기</button><button class="chip" type="button" data-example-index="1">기억에 남는 경험 기록하기</button><button class="chip" type="button" data-example-index="2">보고서 문장 다듬기</button></div>
-            <p class="work-status" id="work-status" aria-live="polite">실습 내용을 적거나 예시를 골라 시작해 보세요.</p>
-            <div class="suggestions" aria-label="빠른 요청"><button class="chip" type="button" data-prompt="오늘 실습에서 한 업무를 보고서 초안으로 정리해줘">보고서 초안 정리 →</button><button class="chip" type="button" data-prompt="이 메모를 자연스러운 문장으로 다듬어줘">문장 다듬기 →</button><button class="chip" type="button" data-prompt="실습 내용을 항목별로 정리해줘">항목별 정리 →</button></div>
-            <form class="composer" id="composer"><input id="message" type="text" autocomplete="off" placeholder="오늘의 실습 내용을 편하게 적어주세요..." aria-label="메시지 입력" data-copy-placeholder="placeholder" disabled><button id="send" type="submit" aria-label="메시지 보내기" disabled>↑</button></form>
-            <p class="composer-hint" data-copy="hint">메모를 바탕으로 초안을 만들고, 대화로 내용을 다듬을 수 있어요.</p>
+        <div class="assistant-workspace">
+          <section class="chat-card" aria-label="AIDE 현장 실습 보고서 대화창">
+            <div class="window-bar"><i class="window-dot"></i><i class="window-dot"></i><i class="window-dot"></i><span class="window-label" data-copy="chatTitle">AIDE 현장 실습 보고서 도우미</span></div>
+            <div id="webchat" aria-label="대화 내용"></div>
+            <div class="chat-foot">
+              <div class="examples" aria-label="예시 요청"><button class="chip" type="button" data-example-index="0">오늘 실습 메모 정리하기</button><button class="chip" type="button" data-example-index="1">기억에 남는 경험 기록하기</button><button class="chip" type="button" data-example-index="2">보고서 문장 다듬기</button></div>
+              <p class="work-status" id="work-status" aria-live="polite">실습 내용을 적거나 예시를 골라 시작해 보세요.</p>
+              <div class="suggestions" aria-label="빠른 요청"><button class="chip" type="button" data-prompt="오늘 실습에서 한 업무를 보고서 초안으로 정리해줘">보고서 초안 정리 →</button><button class="chip" type="button" data-prompt="이 메모를 자연스러운 문장으로 다듬어줘">문장 다듬기 →</button><button class="chip" type="button" data-prompt="실습 내용을 항목별로 정리해줘">항목별 정리 →</button></div>
+              <form class="composer" id="composer"><input id="message" type="text" autocomplete="off" placeholder="오늘의 실습 내용을 편하게 적어주세요..." aria-label="메시지 입력" data-copy-placeholder="placeholder" disabled><button id="send" type="submit" aria-label="메시지 보내기" disabled>↑</button></form>
+              <p class="composer-hint" data-copy="hint">메모를 바탕으로 초안을 만들고, 대화로 내용을 다듬을 수 있어요.</p>
+            </div>
+            <p id="status" role="status" aria-live="polite"></p>
+          </section>
+          <aside class="waiting-game" id="waiting-game" aria-label="보고서 작성 대기 게임" hidden>
+            <h2 class="waiting-game__heading">잠깐, 게임 한 판!</h2>
+            <p class="waiting-game__hint">보고서를 기다리는 동안 장애물을 피해 보세요. 스페이스바 또는 ↑ 키로 점프!</p>
+            <div class="waiting-game__stage" id="waiting-game-stage" aria-label="장애물 달리기 게임">
+              <div class="waiting-game__ground"></div>
+              <span class="waiting-game__runner" id="waiting-game-runner" aria-hidden="true">🦖</span>
+            </div>
+            <p class="waiting-game__score" id="waiting-game-score">점수 0</p>
+            <div class="waiting-game__controls">
+              <button class="waiting-game__button waiting-game__button--primary" id="waiting-game-jump" type="button">점프</button>
+              <button class="waiting-game__button" id="waiting-game-restart" type="button" hidden>다시하기</button>
+            </div>
+          </aside>
           </div>
-          <p id="status" role="status" aria-live="polite"></p>
-        </section>
       </div>
     </section>
 
@@ -483,7 +525,130 @@
 
     let directLine;
     let localPreview = false;
+    let waitingForReport = false;
+    const waitingGame = {
+      active: false,
+      frame: 0,
+      lastTime: 0,
+      elapsed: 0,
+      distance: 0,
+      speed: 250,
+      playerY: 0,
+      velocityY: 0,
+      spawnIn: 1.1,
+      obstacles: []
+    };
+    const gamePanel = document.getElementById("waiting-game");
+    const gameStage = document.getElementById("waiting-game-stage");
+    const gameRunner = document.getElementById("waiting-game-runner");
+    const gameScore = document.getElementById("waiting-game-score");
+    const gameHint = document.querySelector(".waiting-game__hint");
+    const gameJumpButton = document.getElementById("waiting-game-jump");
+    const gameRestartButton = document.getElementById("waiting-game-restart");
+
+    function jumpInGame() {
+      if (!waitingGame.active || waitingGame.playerY > 0) return;
+      waitingGame.velocityY = 480;
+    }
+
+    function finishWaitingGame() {
+      waitingGame.active = false;
+      cancelAnimationFrame(waitingGame.frame);
+      waitingGame.obstacles.forEach((obstacle) => obstacle.element.remove());
+      waitingGame.obstacles = [];
+      waitingGame.playerY = 0;
+      waitingGame.velocityY = 0;
+      gameRunner.style.transform = "";
+      gamePanel.hidden = true;
+      waitingForReport = false;
+    }
+
+    function startWaitingGame() {
+      cancelAnimationFrame(waitingGame.frame);
+      waitingGame.obstacles.forEach((obstacle) => obstacle.element.remove());
+      waitingGame.obstacles = [];
+      waitingGame.active = true;
+      waitingGame.lastTime = 0;
+      waitingGame.elapsed = 0;
+      waitingGame.distance = 0;
+      waitingGame.speed = 250;
+      waitingGame.playerY = 0;
+      waitingGame.velocityY = 0;
+      waitingGame.spawnIn = 2;
+      waitingForReport = true;
+      gameHint.textContent = localPreview
+        ? "화면 미리보기용 게임이에요. 스페이스바 또는 ↑ 키로 점프!"
+        : "보고서를 기다리는 동안 장애물을 피해 보세요. 스페이스바 또는 ↑ 키로 점프!";
+      gameRunner.style.transform = "";
+      gameScore.textContent = "점수 0";
+      gameJumpButton.disabled = false;
+      gameRestartButton.hidden = true;
+      gamePanel.hidden = false;
+
+      function updateGame(time) {
+        if (!waitingGame.active) return;
+        const delta = waitingGame.lastTime ? Math.min((time - waitingGame.lastTime) / 1000, 0.05) : 0;
+        waitingGame.lastTime = time;
+        waitingGame.elapsed += delta;
+        waitingGame.distance += waitingGame.speed * delta;
+        waitingGame.speed = Math.min(390, 250 + waitingGame.elapsed * 3);
+        waitingGame.spawnIn -= delta;
+        waitingGame.velocityY -= 1350 * delta;
+        waitingGame.playerY = Math.max(0, waitingGame.playerY + waitingGame.velocityY * delta);
+        if (waitingGame.playerY === 0) waitingGame.velocityY = 0;
+        gameRunner.style.transform = "translateY(-" + waitingGame.playerY + "px)";
+        gameScore.textContent = "점수 " + Math.floor(waitingGame.distance / 10);
+
+        if (waitingGame.spawnIn <= 0) {
+          const element = document.createElement("span");
+          const height = 22 + Math.floor(Math.random() * 18);
+          element.className = "waiting-game__obstacle";
+          element.style.left = "0";
+          element.style.height = height + "px";
+          gameStage.append(element);
+          waitingGame.obstacles.push({ element, x: gameStage.clientWidth, height });
+          waitingGame.spawnIn = 1.25 + Math.random() * 0.75;
+        }
+
+        const runnerLeft = gameRunner.offsetLeft;
+        const runnerRight = runnerLeft + gameRunner.offsetWidth - 5;
+        for (let index = waitingGame.obstacles.length - 1; index >= 0; index -= 1) {
+          const obstacle = waitingGame.obstacles[index];
+          obstacle.x -= waitingGame.speed * delta;
+          obstacle.element.style.transform = "translateX(" + obstacle.x + "px)";
+          const obstacleRight = obstacle.x + obstacle.element.offsetWidth;
+          if (obstacle.x < runnerRight && obstacleRight > runnerLeft && waitingGame.playerY < obstacle.height - 2) {
+            waitingGame.active = false;
+            gameJumpButton.disabled = true;
+            gameRestartButton.hidden = false;
+            gameScore.textContent = "앗, 부딪혔어요! 점수 " + Math.floor(waitingGame.distance / 10);
+            return;
+          }
+          if (obstacleRight < 0) {
+            obstacle.element.remove();
+            waitingGame.obstacles.splice(index, 1);
+          }
+        }
+        waitingGame.frame = requestAnimationFrame(updateGame);
+      }
+
+      waitingGame.frame = requestAnimationFrame(updateGame);
+    }
+
+    gameJumpButton.addEventListener("click", jumpInGame);
+    gameRestartButton.addEventListener("click", startWaitingGame);
+    gameStage.addEventListener("pointerdown", jumpInGame);
+    document.addEventListener("keydown", (event) => {
+      if (!gamePanel.hidden && document.activeElement !== gameRestartButton &&
+          (event.code === "Space" || event.code === "ArrowUp") &&
+          !["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) {
+        event.preventDefault();
+        jumpInGame();
+      }
+    });
+
     function showError(text) {
+      finishWaitingGame();
       status.textContent = text;
       workStatus.textContent = text;
     }
@@ -500,6 +665,7 @@
         previewMessage.textContent = content;
         messages.append(previewMessage);
         document.body.classList.add("is-started");
+        startWaitingGame();
         setWorking("디자인 미리보기 · 이 메시지는 실제 AIDE에 전송되지 않았어요.");
         messageInput.value = "";
         requestAnimationFrame(() => document.getElementById("chat").scrollIntoView({ block: "start", behavior: "smooth" }));
@@ -508,6 +674,7 @@
       if (!directLine) return;
       document.body.classList.add("is-started");
       requestAnimationFrame(() => document.getElementById("chat").scrollIntoView({ block: "start", behavior: "smooth" }));
+      startWaitingGame();
       setWorking("AIDE가 보고서 작성을 돕고 있어요...");
       directLine.postActivity({ type: "message", text: content, from: { id: "user" } }).subscribe({
         error: () => showError("메시지를 보내지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.")
@@ -572,6 +739,7 @@
           if (action.type === "DIRECT_LINE/INCOMING_ACTIVITY") {
             const activity = action.payload && action.payload.activity;
             if (activity && activity.from && activity.from.role !== "user" && activity.type === "message") {
+              if (waitingForReport) finishWaitingGame();
               setWorking("답변이 도착했어요. 더 필요한 내용을 요청해 보세요.");
             }
           }
