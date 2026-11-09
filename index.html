@@ -464,7 +464,7 @@
           </section>
           <aside class="waiting-game" id="waiting-game" aria-label="보고서 작성 대기 게임" hidden>
             <h2 class="waiting-game__heading">잠깐, 게임 한 판!</h2>
-            <p class="waiting-game__hint">보고서를 기다리는 동안 장애물을 피해 보세요. 스페이스바 또는 ↑ 키로 점프!</p>
+            <p class="waiting-game__hint">짧게 누르면 낮게, 길게 누르면 높이 점프해요. 스페이스바나 ↑ 키도 사용할 수 있어요.</p>
             <div class="waiting-game__stage" id="waiting-game-stage" aria-label="장애물 달리기 게임">
               <div class="waiting-game__ground"></div>
               <span class="waiting-game__runner" id="waiting-game-runner" aria-hidden="true">🦖</span>
@@ -564,6 +564,8 @@
       speed: 250,
       playerY: 0,
       velocityY: 0,
+      jumpHeld: false,
+      jumpHoldRemaining: 0,
       spawnIn: 1.1,
       obstacles: []
     };
@@ -578,6 +580,17 @@
     function jumpInGame() {
       if (!waitingGame.active || waitingGame.playerY > 0) return;
       waitingGame.velocityY = 480;
+      waitingGame.jumpHoldRemaining = 0.32;
+    }
+
+    function holdJump() {
+      if (!waitingGame.active) return;
+      waitingGame.jumpHeld = true;
+      if (waitingGame.playerY === 0) jumpInGame();
+    }
+
+    function releaseJump() {
+      waitingGame.jumpHeld = false;
     }
 
     function finishWaitingGame() {
@@ -587,6 +600,8 @@
       waitingGame.obstacles = [];
       waitingGame.playerY = 0;
       waitingGame.velocityY = 0;
+      waitingGame.jumpHeld = false;
+      waitingGame.jumpHoldRemaining = 0;
       gameRunner.style.transform = "";
       gamePanel.hidden = true;
       waitingForReport = false;
@@ -645,12 +660,14 @@
       waitingGame.speed = 250;
       waitingGame.playerY = 0;
       waitingGame.velocityY = 0;
+      waitingGame.jumpHeld = false;
+      waitingGame.jumpHoldRemaining = 0;
       waitingGame.spawnIn = 2;
       waitingForReport = true;
       document.body.classList.add("is-waiting");
       gameHint.textContent = localPreview
-        ? "화면 미리보기용 게임이에요. 스페이스바 또는 ↑ 키로 점프!"
-        : "보고서를 기다리는 동안 장애물을 피해 보세요. 스페이스바 또는 ↑ 키로 점프!";
+        ? "화면 미리보기용 게임이에요. 짧게 누르면 낮게, 길게 누르면 높이 뛰어요."
+        : "보고서를 기다리는 동안 장애물을 피해 보세요. 짧게 누르면 낮게, 길게 누르면 높이 뛰어요.";
       gameRunner.style.transform = "";
       gameScore.textContent = "점수 0";
       gameJumpButton.disabled = false;
@@ -665,7 +682,9 @@
         waitingGame.distance += waitingGame.speed * delta;
         waitingGame.speed = Math.min(390, 250 + waitingGame.elapsed * 3);
         waitingGame.spawnIn -= delta;
-        waitingGame.velocityY -= 1350 * delta;
+        const holdLift = waitingGame.jumpHeld && waitingGame.jumpHoldRemaining > 0 ? 900 : 0;
+        waitingGame.jumpHoldRemaining = Math.max(0, waitingGame.jumpHoldRemaining - delta);
+        waitingGame.velocityY -= (1350 - holdLift) * delta;
         waitingGame.playerY = Math.max(0, waitingGame.playerY + waitingGame.velocityY * delta);
         if (waitingGame.playerY === 0) waitingGame.velocityY = 0;
         gameRunner.style.transform = "translateY(-" + waitingGame.playerY + "px)";
@@ -700,6 +719,7 @@
           const obstacleRight = obstacle.x + obstacle.element.offsetWidth;
           if (obstacle.x < runnerRight && obstacleRight > runnerLeft && waitingGame.playerY < obstacle.height - 2) {
             waitingGame.active = false;
+            waitingGame.jumpHeld = false;
             gameJumpButton.disabled = true;
             gameRestartButton.hidden = false;
             gameScore.textContent = "앗, 부딪혔어요! 점수 " + Math.floor(waitingGame.distance / 10);
@@ -716,16 +736,35 @@
       waitingGame.frame = requestAnimationFrame(updateGame);
     }
 
-    gameJumpButton.addEventListener("click", jumpInGame);
+    gameJumpButton.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      gameJumpButton.setPointerCapture(event.pointerId);
+      holdJump();
+    });
+    gameJumpButton.addEventListener("pointerup", releaseJump);
+    gameJumpButton.addEventListener("pointercancel", releaseJump);
+    gameJumpButton.addEventListener("lostpointercapture", releaseJump);
+    gameJumpButton.addEventListener("click", (event) => {
+      if (event.detail === 0) jumpInGame();
+    });
     gameRestartButton.addEventListener("click", startWaitingGame);
-    gameStage.addEventListener("pointerdown", jumpInGame);
+    gameStage.addEventListener("pointerdown", (event) => {
+      if (event.target === gameJumpButton) return;
+      gameStage.setPointerCapture(event.pointerId);
+      holdJump();
+    });
+    gameStage.addEventListener("pointerup", releaseJump);
+    gameStage.addEventListener("pointercancel", releaseJump);
     document.addEventListener("keydown", (event) => {
       if (!gamePanel.hidden && document.activeElement !== gameRestartButton &&
           (event.code === "Space" || event.code === "ArrowUp") &&
           !["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) {
         event.preventDefault();
-        jumpInGame();
+        if (!event.repeat) holdJump();
       }
+    });
+    document.addEventListener("keyup", (event) => {
+      if (event.code === "Space" || event.code === "ArrowUp") releaseJump();
     });
 
     function showError(text) {
