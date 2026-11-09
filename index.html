@@ -111,8 +111,15 @@
     .waiting-game__stage { position: relative; height: 126px; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: var(--accent-soft); }
     .waiting-game__ground { position: absolute; right: 0; bottom: 14px; left: 0; height: 1px; background: var(--muted); opacity: .5; }
     .waiting-game__runner { position: absolute; bottom: 15px; left: 42px; z-index: 1; font-size: 27px; line-height: 1; user-select: none; }
-    .waiting-game__obstacle { position: absolute; bottom: 15px; width: 15px; border-radius: 4px 4px 2px 2px; background: var(--accent); }
-    .waiting-game__obstacle::before { position: absolute; top: 35%; left: -5px; width: 7px; height: 5px; border-radius: 3px 0 0 3px; background: var(--accent); content: ""; }
+    .waiting-game__obstacle { position: absolute; bottom: 15px; left: 0; width: 17px; background: transparent; }
+    .waiting-game__obstacle::before { position: absolute; right: 4px; bottom: 0; left: 4px; height: 100%; border-radius: 5px 5px 2px 2px; background: var(--accent); content: ""; }
+    .waiting-game__obstacle::after { position: absolute; top: 42%; left: 0; width: 7px; height: 7px; border-top: 3px solid var(--accent); border-left: 3px solid var(--accent); border-radius: 4px 0 0; content: ""; }
+    .waiting-game__obstacle.is-short { width: 16px; }
+    .waiting-game__obstacle.is-tall { width: 19px; }
+    .waiting-game__obstacle.is-double { width: 34px; }
+    .waiting-game__obstacle.is-rock::before { right: 2px; left: 2px; height: 68%; border-radius: 55% 48% 3px 3px; background: #7a8a82; }
+    .waiting-game__obstacle.is-rock::after { top: auto; right: 0; bottom: 0; left: auto; width: 11px; height: 48%; border: 0; border-radius: 50% 50% 2px 2px; background: #96a39d; }
+    .waiting-game__second { position: absolute; right: 0; bottom: 0; width: 11px; height: 62%; border-radius: 4px 4px 2px 2px; background: var(--accent); }
     .waiting-game__score { margin: 10px 0; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
     .waiting-game__controls { display: flex; gap: 8px; margin-top: auto; }
     .waiting-game__button { flex: 1; min-height: 38px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); font-size: 12px; font-weight: 700; cursor: pointer; }
@@ -546,6 +553,8 @@
     let directLine;
     let localPreview = false;
     let waitingForReport = false;
+    let reportFlowStage = "idle";
+    let reportGenerationPending = false;
     const waitingGame = {
       active: false,
       frame: 0,
@@ -582,6 +591,47 @@
       gamePanel.hidden = true;
       waitingForReport = false;
       document.body.classList.remove("is-waiting");
+    }
+
+    function isInformationCollectionPrompt(text) {
+      return /개인\s*정보.{0,24}(?:원하시나요|동의|작성|입력|알려|받아도|괜찮|필요)|(?:업무|실습)\s*메모|메모.{0,16}(?:입력|작성|남겨|알려|보내|적어|말해)|(?:오늘|실습).{0,20}(?:무슨|어떤|맡은|하신).{0,12}(?:업무|일|실습)|업무.{0,16}(?:하셨|했|수행|담당)/i.test(text);
+    }
+
+    function isReportGenerationNotice(text) {
+      if (/[?？]/.test(text)) return false;
+      return /보고서.{0,24}(?:작성|생성|만들).{0,20}(?:시작|중|할게|하겠|해\s*드릴|해\s*볼|진행|드릴게|드리겠)|(?:작성|생성|만들).{0,16}보고서.{0,20}(?:시작|중|할게|하겠|해\s*드릴|해\s*볼|진행|드릴게|드리겠)|초안.{0,16}(?:작성|생성|만들).{0,20}(?:시작|중|할게|하겠|해\s*드릴|해\s*볼|진행|드릴게|드리겠)/i.test(text);
+    }
+
+    function handleBotActivity(activity) {
+      if (!activity || !activity.from || activity.from.role === "user") return;
+      if (activity.type !== "message") return;
+
+      const text = typeof activity.text === "string" ? activity.text : "";
+      if (isInformationCollectionPrompt(text)) {
+        finishWaitingGame();
+        reportGenerationPending = false;
+        reportFlowStage = /개인\s*정보/i.test(text) ? "awaiting_privacy" : "awaiting_memo";
+        setWorking("AIDE가 보고서에 필요한 내용을 확인하고 있어요.");
+        return;
+      }
+      if (reportGenerationPending && isReportGenerationNotice(text)) {
+        reportGenerationPending = false;
+        reportFlowStage = "generating";
+        startWaitingGame();
+        setWorking("AIDE가 보고서를 작성하고 있어요...");
+        return;
+      }
+      if (reportFlowStage === "generating" && waitingForReport) {
+        finishWaitingGame();
+        reportFlowStage = "complete";
+        setWorking("답변이 도착했어요. 더 필요한 내용을 요청해 보세요.");
+        return;
+      }
+      if (reportGenerationPending && /[?？]|(?:알려|입력|작성|선택)해\s*주세요|원하시나요|어떠신가요/.test(text)) {
+        reportGenerationPending = false;
+        reportFlowStage = "awaiting_followup";
+        setWorking("AIDE가 보고서에 필요한 내용을 확인하고 있어요.");
+      }
     }
 
     function startWaitingGame() {
@@ -623,13 +673,22 @@
 
         if (waitingGame.spawnIn <= 0) {
           const element = document.createElement("span");
-          const height = 22 + Math.floor(Math.random() * 18);
-          element.className = "waiting-game__obstacle";
-          element.style.left = "0";
+          const roll = Math.random();
+          const kind = roll < 0.28 ? "is-short" : roll < 0.55 ? "is-tall" : roll < 0.78 ? "is-double" : "is-rock";
+          const height = kind === "is-short" ? 22 + Math.floor(Math.random() * 8)
+            : kind === "is-tall" ? 42 + Math.floor(Math.random() * 15)
+            : kind === "is-rock" ? 24 + Math.floor(Math.random() * 10)
+            : 30 + Math.floor(Math.random() * 13);
+          element.className = "waiting-game__obstacle " + kind;
           element.style.height = height + "px";
+          if (kind === "is-double") {
+            const second = document.createElement("span");
+            second.className = "waiting-game__second";
+            element.append(second);
+          }
           gameStage.append(element);
           waitingGame.obstacles.push({ element, x: gameStage.clientWidth, height });
-          waitingGame.spawnIn = 1.25 + Math.random() * 0.75;
+          waitingGame.spawnIn = 1.35 + Math.random() * 0.95;
         }
 
         const runnerLeft = gameRunner.offsetLeft;
@@ -687,8 +746,16 @@
         previewMessage.textContent = content;
         messages.append(previewMessage);
         document.body.classList.add("is-started");
-        startWaitingGame();
-        setWorking("디자인 미리보기 · 이 메시지는 실제 AIDE에 전송되지 않았어요.");
+        if (/보고서.{0,12}(?:작성|만들|생성).{0,8}(?:시작|해줘|해주세요)|초안.{0,8}(?:작성|만들).{0,8}(?:시작|해줘|해주세요)/i.test(content)) {
+          reportFlowStage = "generating";
+          startWaitingGame();
+          setWorking("디자인 미리보기 · 보고서 작성 중을 가정하고 게임을 표시하고 있어요.");
+        } else if (isInformationCollectionPrompt(content)) {
+          reportFlowStage = /개인\s*정보/i.test(content) ? "awaiting_privacy" : "awaiting_memo";
+          setWorking("디자인 미리보기 · 정보 확인 단계에서는 게임을 표시하지 않아요.");
+        } else {
+          setWorking("디자인 미리보기 · 보고서 작성을 시작하면 게임이 표시돼요.");
+        }
         messageInput.value = "";
         requestAnimationFrame(() => document.getElementById("chat").scrollIntoView({ block: "start", behavior: "smooth" }));
         return;
@@ -696,8 +763,13 @@
       if (!directLine) return;
       document.body.classList.add("is-started");
       requestAnimationFrame(() => document.getElementById("chat").scrollIntoView({ block: "start", behavior: "smooth" }));
-      startWaitingGame();
-      setWorking("AIDE가 보고서 작성을 돕고 있어요...");
+      if (reportFlowStage === "awaiting_memo" || reportFlowStage === "awaiting_followup") {
+        reportGenerationPending = true;
+        reportFlowStage = "awaiting_generation";
+        setWorking("내용을 확인했어요. 보고서 작성이 시작되면 게임이 나타나요.");
+      } else {
+        setWorking("AIDE가 필요한 내용을 확인하고 있어요...");
+      }
       directLine.postActivity({ type: "message", text: content, from: { id: "user" } }).subscribe({
         error: () => showError("메시지를 보내지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.")
       });
@@ -760,10 +832,7 @@
           }
           if (action.type === "DIRECT_LINE/INCOMING_ACTIVITY") {
             const activity = action.payload && action.payload.activity;
-            if (activity && activity.from && activity.from.role !== "user" && activity.type === "message") {
-              if (waitingForReport) finishWaitingGame();
-              setWorking("답변이 도착했어요. 더 필요한 내용을 요청해 보세요.");
-            }
+            handleBotActivity(activity);
           }
           return result;
         });
