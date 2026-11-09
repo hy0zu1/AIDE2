@@ -1,75 +1,253 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AI Creative Agent</title>
-</head>
-<body>
-  <p id="status" role="status" aria-live="polite">채팅에 연결하는 중입니다...</p>
-  <div id="webchat" style="height: 600px"></div>
-  <script src="https://cdn.botframework.com/botframework-webchat/4.18.0/webchat.js"></script>
+너는 Pinterest·Awwwards에 오르는 랜딩페이지를 만드는 시니어 아트 디렉터이자 프론트엔드 엔지니어야.
+
+위에 붙여 넣은 index.html은 Copilot Studio로 만든 'AI Creative Agent Team'과 대화하는 웹 채팅 페이지야. 팀장 에이전트가 전문가 에이전트 5명에게 일을 나눠, 아이디어 한 줄로 발표자료·포스터·제안서·웹페이지·예산 분석 파일 5개를 한 번에 만들어 줘. 지금은 기본 채팅 화면뿐이라 투박해.
+
+이걸 제품 랜딩페이지로 다시 만들어 줘. 첫 화면에서 바로 대화창으로 팀을 써 볼 수 있고, 스크롤을 내리면 기능 소개가 이어지는 한 페이지야. 단, 완전히 다른 디자인 8가지를 한 파일에 모두 넣고, 페이지를 열 때 내 github.io 주소와 페이지를 올린 시각에 따라 그중 하나가 보이게 해. 그래서 같은 요청을 보낸 친구들과 디자인이 다르고, 내가 새 코드를 올릴 때마다 디자인이 새로 바뀌어. 배포한 페이지를 처음 열었을 때 "이걸 AI가 만들었다고?" 하고 놀라는 게 목표야.
+
+## 0. 디자인이 정해지는 방식
+- <head> 안, 글꼴 <link> 바로 다음에 아래 <script>를 한 글자도 바꾸지 말고 그대로 넣어. github.io 주소와 GitHub Pages가 알려 주는 올린 시각(document.lastModified)으로 8개 중 하나가 정해져 <html data-design="키">가 붙고, 그 디자인의 글꼴만 불러와. 새로 올리면 바뀌고, 새로고침하거나 친구가 열어도 그대로야
+- 주소 뒤에 ?design=luxe처럼 키를 붙이면 그 디자인으로 열려(확인용)
+- github.io가 아닌 곳(내 컴퓨터, AI 도구의 미리보기)에서는 data-design이 붙지 않아. 이때는 디자인 없는 단정한 회색 뼈대(와이어프레임)로 보이고, 화면 위쪽에 작은 안내 '🎁 진짜 디자인은 내 github.io 주소에서 열려요'를 띄워
   <script>
-    const BROKER_URL = "https://dl-broker-juwon-4jt3z.azurewebsites.net/api/directlineToken";
-    const SEALED = "mGfBS44pD7gASiKw_z8TL83Ngnmi0cUMDdfWUTZjwspILBV0dxoQr3X2UQZLjdH7kR6MFir8owrBdFsvDQykjbkDGF2PYsGyKmCuy42YQTujZVdwLaBfR6FpesKTwn1Hbj1TkXMvdw8RNcQvNoBVBSsgdVOnAuY7p56QAuQ3wN8uqKqRTkOcMd3nzZunwEWeaVO0YYDT-W3NU94IpVTK3O_m30bbzBPMUr1QPQkFk63-kYpew9ScKk7a5oM5kArWlkXJwFYqQm2FZRSHvCaY7HjOfeNia3_ASf8GOIfW_kO-DZc1IDdp5vdKHXRIrFxahO9R-V2AI-n9r3a8J7pPA0U_Mo65LqLxcQhERKG_gGsq1w1PL8Z2iMotrBzngZoZgc6bJnlnScGCEt88UGnb15HKb36uViqz1NX6DdmHL2pnivld3Y0EV0Wxb9SRCEuGfGrDwkUlOHIrGGxFQHozPSaM7zjXII-biEGdmpFUA2MwKtNEAym4kR3x2secLZ4vUFmlmrWF6XBx1JJFagMI7q_qw5ZXSJydNix-eKM6WW54nfRka3RVjDKUnQ1GVrAT5_AGhTlVMCW5LD7XLKhVyr1BQ1D2o6kumV7PAYa3TjuubNksiYbRqa5rLYiI0olceTvGTrxkoumLmdcp";
-    const status = document.getElementById("status");
-
-    function showError(message) {
-      status.hidden = false;
-      status.textContent = message;
-    }
-
-    async function connect() {
-      if (!window.WebChat ||
-          typeof WebChat.createDirectLine !== "function" ||
-          typeof WebChat.renderWebChat !== "function") {
-        showError("채팅 구성 요소를 불러오지 못했습니다. 네트워크를 확인한 뒤 새로고침해 주세요.");
-        return;
-      }
-
-      let response;
-      try {
-        // Keep this a simple CORS request; the broker may not support preflight.
-        response = await fetch(BROKER_URL, {
-          method: "POST",
-          body: JSON.stringify({ sealed: SEALED })
-        });
-      } catch {
-        showError("서버에 연결하지 못했습니다. 네트워크와 배포 주소를 확인해 주세요.");
-        return;
-      }
-      if (!response.ok) {
-        showError("서버가 연결 요청을 처리하지 못했습니다 (HTTP " + response.status + ").");
-        return;
-      }
-
-      let data;
-      try {
-        data = await response.json();
-      } catch {
-        showError("서버 응답을 읽을 수 없습니다. 잠시 후 다시 시도해 주세요.");
-        return;
-      }
-      if (!data || typeof data.token !== "string" || !data.token.trim()) {
-        showError("서버에서 연결 토큰을 받지 못했습니다. 암호와 배포 주소를 확인해 주세요.");
-        return;
-      }
-
-      try {
-        const directLine = WebChat.createDirectLine({ token: data.token });
-        status.hidden = true;
-        directLine.postActivity({
-          type: "event", name: "startConversation", from: { id: "user" }
-        }).subscribe({
-          error: () => showError("첫 인사를 요청하지 못했습니다. 채팅창에 메시지를 입력해 주세요.")
-        });
-        WebChat.renderWebChat({ directLine, locale: "ko-KR" }, document.getElementById("webchat"));
-      } catch {
-        showError("채팅을 시작하지 못했습니다. 새로고침 후 다시 시도해 주세요.");
-      }
-    }
-
-    connect();
+    // 디자인 정하기: github.io 주소 + 올린 시각으로 8개 중 하나 (새로 올리면 바뀌고, 새로고침해도 그대로)
+    (function () {
+      var G = "https://fonts.googleapis.com/css2?display=swap&family=";
+      var J = "https://cdn.jsdelivr.net/gh/";
+      var FONTS = {
+        glass: [G + "Instrument+Serif:ital@0;1"],
+        noir: [G + "Geist:wght@400;500;600&family=Geist+Mono:wght@400;500"],
+        editorial: [G + "Hahmlet:wght@300;400;600&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400"],
+        swiss: [J + "sun-typeface/SUIT@2/fonts/variable/woff2/SUIT-Variable.css", G + "Inter+Tight:wght@600;800;900&family=IBM+Plex+Mono:wght@400;500"],
+        terra: [G + "Gowun+Batang:wght@400;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400"],
+        bloom: [J + "wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css", G + "Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800"],
+        pop: [G + "Space+Grotesk:wght@500;700"],
+        luxe: [G + "Noto+Serif+KR:wght@200;300;500&family=Bodoni+Moda:ital,wght@0,400;1,400"]
+      };
+      var keys = Object.keys(FONTS);
+      var host = location.hostname;
+      var asked = new URLSearchParams(location.search).get("design");
+      var lm = document.lastModified;
+      var seed = host + (Math.abs(Date.now() - Date.parse(lm)) > 3000 ? lm.slice(-2) : "");
+      var h = 0;
+      for (var i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+      var d = keys.indexOf(asked) > -1 ? asked : /\.github\.io$/.test(host) ? keys[h % keys.length] : "";
+      if (!d) return;
+      document.documentElement.setAttribute("data-design", d);
+      FONTS[d].forEach(function (href) {
+        var link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = href;
+        document.head.appendChild(link);
+      });
+    })();
   </script>
-</body>
-</html>
+
+## 1. 디자인 8가지 (아트 디렉션)
+- 8개 모두 Pinterest·Dribbble·Awwwards의 'web design inspiration'에 저장될 만한 2026년 최신 랜딩페이지 수준이어야 해. 색만 바꾼 템플릿 8개가 아니라, 서로 다른 아트 디렉터가 실제 브랜드를 위해 만든 사이트처럼. 줄마다 적힌 레퍼런스 사이트의 실제 감성을 떠올려 그 수준으로 만들어
+- 디자인마다 CSS는 ① html[data-design="키"] { … } 한 줄에 공통 변수(6장 :root) 값 ② 그 디자인의 첫 화면 구성·표면·시그니처·섹션 규칙 25~35줄. 첫 화면에 가장 공을 들여
+- 형식: 레퍼런스 / 색 / 글꼴 / 첫 화면 / 표면 / 시그니처 / 섹션 / 말투. 글꼴 이름은 적힌 그대로 써
+1. glass 리퀴드 글래스
+   레퍼런스: Apple visionOS·iOS 26 Liquid Glass, Arc 브라우저 랜딩
+   색: 바탕 #F5F5F7, 글자 #1D1D1F, 보조 #6E6E73, 강조 #6E5BFF, 빛 #8EA2FF #C4A5FF #FFB3D9 #FFD3A8 #9BE3FF. 제목 강조 단어는 linear-gradient(120deg, #4F6BFF, #8B5CF6 40%, #EC4899 70%, #FF7A45) 글자
+   글꼴: 'Pretendard Variable' 800, 자간 -0.045em / 영문 포인트 'Instrument Serif' 이탤릭(.eyebrow, .kicker). 제목 clamp(48px, 7vw, 104px), 줄간격 1.02
+   첫 화면: 가운데 정렬 무대. 화면 가장자리 12px 안쪽, 모서리 40px의 큰 패널을 파스텔 메시 그라데이션(빛 5색의 큰 radial-gradient 여러 겹)으로 가득 채우고, 그 위에 유리 알약 배지 → 2줄 큰 제목 → 소개 → 유리 대화창. 패널 위로 .deco i 3개가 크기가 다른 3D 파스텔 구슬(6장 레시피)이 되어 20초 넘게 천천히 떠다님
+   표면: 유리 rgba(255,255,255,.55) + backdrop-filter: blur(24px) saturate(180%) + 1px rgba(255,255,255,.75) 테두리 + inset 0 1px 0 #fff 하이라이트 + 0 30px 80px -30px rgba(76,70,160,.3) 그림자, 모서리 28px. 주 버튼은 검은 알약 #1D1D1F
+   시그니처: 3D 파스텔 구슬과 유리 하이라이트, 아주 옅은 그레인(--grain: .05)
+   섹션: 기능은 벤토(6열에 3·3·2·2·2칸) 유리 카드, 카드마다 유리 위 목업. 숫자는 큰 그라데이션 숫자. 마지막 섹션(.cta)은 히어로와 같은 메시 패널. 거대 워드마크는 그라데이션 글자
+   말투: 담백하고 세련된 애플 제품 카피
+2. noir 다크 그리드 글로우
+   레퍼런스: Linear, Vercel, Raycast, Lovable 랜딩
+   색: 바탕 #08090A, 카드 #0E0F11, 글자 #F7F8F8, 보조 #8A8F98, 선 rgba(255,255,255,.08), 강조 #8B8CFF(인디고), 강조 2 #3CE0B4(민트, 아주 조금)
+   글꼴: 'Pretendard Variable' 600, 자간 -0.04em / 영문 라벨·버튼 'Geist' 500 / 숫자·파일 이름 'Geist Mono'. 제목 clamp(44px, 6.4vw, 92px), 위에서 아래로 #FFFFFF → rgba(255,255,255,.5) 그라데이션 글자
+   첫 화면: 가운데 정렬. 얇은 테두리 알약 배지('New · 멀티 에이전트 →' 같은), 큰 제목, 소개, Lovable처럼 빛나는 대화창. 배경엔 64px 격자선(선 색)을 radial mask로 가운데만 보이게, 대화창 뒤엔 인디고·민트 스포트라이트(큰 radial-gradient), 화면 맨 위 가운데엔 아래로 퍼지는 빛줄기(.deco i)
+   표면: 카드 #0E0F11 + 1px 선 + inset 0 1px 0 rgba(255,255,255,.06), 모서리 16px. 대화창은 그라데이션 테두리(6장 레시피, 인디고→투명→민트). 주 버튼은 흰 알약에 검은 글자
+   시그니처: 격자 + 스포트라이트 + 그라데이션 테두리, 마우스를 따라 카드 안에서 움직이는 은은한 빛(pointermove로 --x, --y를 바꾸는 radial-gradient)
+   섹션: 기능은 크기가 다른 벤토 타일 5개, 타일마다 어두운 목업과 은은한 색 빛. 작동 방식은 왼쪽 궤도·오른쪽 단계(번호 01–04는 Geist Mono). 숫자는 모노 숫자와 얇은 구분선. 거대 워드마크는 아래로 갈수록 사라지는 흰 글자
+   말투: 짧고 단단한 개발툴 카피(예: '아이디어를 배포하세요.')
+3. editorial 에디토리얼 세리프
+   레퍼런스: Kinfolk, Cereal 매거진, The Gentlewoman, Apartamento 웹사이트
+   색: 종이 #F2EEE6, 카드 #F7F4EE, 글자 #161512, 보조 #6B665E, 선 #161512, 강조 #23395B(잉크 블루, 아주 조금)
+   글꼴: 'Hahmlet' 300(제목)·400, 자간 -0.035em / 영문 포인트 'Newsreader' 이탤릭 / 작은 라벨은 'Pretendard Variable' 500, 12px, 대문자, 자간 .16em. 제목 clamp(48px, 7.4vw, 112px), 줄간격 1.04
+   첫 화면: 신문 1면처럼. .nav는 마스트헤드(가운데 제호, 양옆 링크·버튼, 아래 이중 괘선)로. 데스크톱은 12열 그리드: 왼쪽 7열에 'Vol. 01 — 오늘 날짜' 라벨, 큰 세리프 제목, 'Editor's note —' 이탤릭으로 시작하는 소개 단락 / 오른쪽 5열에 'Fig. 01' 캡션이 달린 아치형 그림(.deco i: 위가 둥근 창 모양에 하늘→모래색 그라데이션과 둥근 해)과 '인터뷰' 지면 같은 대화창
+   표면: 그림자 없이 1px 괘선과 넓은 여백. 모서리 0(대화창만 2px). 주 버튼은 검은 사각 버튼에 '→'
+   시그니처: 아치 그림, 세로 괘선으로 나눈 단, 'Fig. 02'·'p. 12' 같은 작은 캡션
+   섹션: 기능은 세로 괘선으로 나눈 신문 단 5개(로마 숫자 I–V와 이탤릭 제목, 목업은 캡션 달린 작은 그림). 작동 방식 단계는 목차(Contents)처럼 점선 리더와 쪽수. 마지막 섹션은 큰 인용문. 거대 워드마크는 세리프
+   말투: 주말판 잡지 기사, 차분한 문어체
+4. swiss 스위스 애시드
+   레퍼런스: 국제주의 타이포 포스터, Nothing, 최신 디자인 에이전시 사이트
+   색: 바탕 #F4F4F1, 글자·선 #0B0B0B, 보조 #5E5E5A, 강조 애시드 라임 #D4FF3A(면으로만 쓰고 그 위 글자는 검정)
+   글꼴: 'SUIT Variable' 800·900, 자간 -0.055em / 영문·숫자 'Inter Tight' 900 / 라벨 'IBM Plex Mono' 대문자. 제목 clamp(52px, 9vw, 148px), 줄간격 .94
+   첫 화면: 비대칭 그리드. 위쪽을 꽉 채운 2줄짜리 거대한 제목(<em> 단어에만 라임 면), 아래 12열 그리드: 1–4열에 '(01) Agent team' 라벨과 소개, 6–12열에 대화창. 배경에 12열 세로 선(1px, 아주 옅게)과 오른쪽 위 거대한 외곽선 숫자 '05'(.deco i). .hero-meta는 대문자 모노 한 줄 티커로 끝없이 흐름
+   표면: 모서리 0, 그림자 없음, 1px 검은 선. 버튼은 검은 사각, 마우스를 올리면 라임
+   시그니처: 거대한 타이포, 라임 면, 칸마다 '(02)' 같은 번호
+   섹션: 기능은 표처럼 줄마다 번호·이름·설명·파일 이름, 마우스를 올리면 그 줄이 라임으로 채워지고 목업이 줄 오른쪽에 나타남. 숫자 4개는 거대한 숫자. 거대 워드마크는 검은 굵은 글자
+   말투: 짧은 선언문, 마침표로 끊기
+5. terra 어스 톤 오가닉
+   레퍼런스: Aesop, 웰니스·세라믹 브랜드, 미드센추리 모던 포스터
+   색: 바탕 #EDE5D8, 카드 #F7F1E7, 글자 #2A231D, 보조 #6E6257, 테라코타 #C2603A, 올리브 #7D7A45, 샌드 #D8C3A5, 머스터드 #D9A441
+   글꼴: 'Gowun Batang' 700(제목), 본문 'Pretendard Variable' / 영문 포인트 'Fraunces' 이탤릭. 제목 clamp(44px, 6.4vw, 96px), 줄간격 1.1, 자간 -0.03em
+   첫 화면: 2단. 왼쪽에 제목·소개와 천천히 도는 원형 배지(점선 원 안에 'since 2026'), 오른쪽에 미드센추리 도형 구성(.deco i: 테라코타 아치, 올리브 원, 머스터드 반원, 샌드 기둥이 겹쳐 쌓인 그림) 위에 대화창이 살짝 겹쳐 놓임
+   표면: 크림 카드, 모서리 28px, 넓게 퍼지는 따뜻한 그림자 0 30px 60px -30px rgba(80,50,20,.28). 알약 버튼(테라코타 바탕, 크림 글자)
+   시그니처: 아치·원·반원 도형, 따뜻한 그레인(--grain: .07)
+   섹션: 섹션 띠 바탕을 바탕색·샌드로 번갈아. 기능 카드는 위가 아치 모양인 목업 창, 카드 바탕은 크림·샌드 번갈아. 거대 워드마크는 테라코타
+   말투: 다정하고 느긋한 라이프스타일 브랜드
+6. bloom 그라데이션 포스터
+   레퍼런스: Stripe, Framer 템플릿, Spotify Wrapped
+   색: 페이지 #FFF7F2, 글자 #1B1030, 보조 #6A5C7A, 카드 #FFFFFF, 히어로 그라데이션 #2A0E61 · #6B2BFF · #FF3D7F · #FF8A3D · #FFC94A
+   글꼴: 'Wanted Sans Variable' 800, 자간 -0.045em / 영문 'Bricolage Grotesque' 800. 제목 clamp(52px, 8vw, 128px), 줄간격 .98
+   첫 화면: 화면 가장자리 12px 안쪽, 모서리 40px의 꽉 찬 유체 그라데이션 포스터 패널(radial-gradient 여러 겹. 제목이 놓이는 왼쪽은 진한 보라라 흰 글자가 또렷하게) + 강한 그레인(패널에만 .hero::after로 .14). 왼쪽 정렬 거대한 흰 제목과 흰 소개, 오른쪽에 흰 대화창이 패널 아래쪽에 걸쳐 떠 있음. 패널 위에 회전한 알약 스티커 2개('5 files', 'AI team'. .deco i의 ::before 글자)
+   표면: 흰 카드 모서리 28px, 그림자 0 40px 80px -40px rgba(60,20,120,.35). 버튼은 진한 보라 알약
+   시그니처: 유체 그라데이션 + 그레인, -3deg 기운 거대한 마키 띠
+   섹션: 기능 카드 5개는 각각 다른 그라데이션 조각이 바탕(흰 글자), 목업은 흰 유리. 예시 요청 .marquee는 -3deg 기운 그라데이션 띠에 흰 굵은 글자. 거대 워드마크는 그라데이션 글자
+   말투: 신나고 자신감 있는 캠페인 카피
+7. pop 네오 브루털 팝
+   레퍼런스: Gumroad, Figma Config, 굵은 색 블록 스타트업 사이트
+   색: 바탕 #F4F4F0, 글자·선 #000000, 카드 #FFFFFF, 분홍 #FF90E8, 노랑 #FFC900, 하늘 #90A8ED, 초록 #23A094
+   글꼴: 'Pretendard Variable' 900, 자간 -0.05em / 영문 'Space Grotesk' 700. 제목 clamp(48px, 7.6vw, 116px), 줄간격 .98
+   첫 화면: 2단. 왼쪽 정렬 거대한 제목(<em> 단어는 분홍 면 위), 오른쪽에 -1.5deg 기운 대화창. 둘레에 원형 스티커('NEW!'), 별(clip-path 별 모양), 기울어진 알약 스티커가 흩어짐(.deco i)
+   표면: 2px 검은 테두리 + 4px 4px 0 #000 딱딱한 그림자, 모서리 12px. 버튼은 누르면 그림자만큼 눌림(translate 4px 4px, 그림자 0)
+   시그니처: 색 블록·스티커·딱딱한 그림자, 섹션마다 다른 색 바탕
+   섹션: 기능 카드 5개는 각각 분홍·노랑·하늘·초록·흰색 카드에 ±1deg 기울기, 목업은 흰 상자. 숫자 4개는 색 블록 카드. .marquee는 노랑 띠에 검은 굵은 글자. 거대 워드마크는 검은 글자에 분홍 그림자
+   말투: 친구에게 말하듯 경쾌하게(예: '한 줄만 던져요. 나머진 우리가!')
+8. luxe 다크 럭셔리
+   레퍼런스: 하이엔드 호텔·주얼리·향수 브랜드 사이트, 아르데코 포스터
+   색: 바탕 #0C0B0A, 카드 #141210, 글자 #EDE6DA(아이보리), 보조 #9C9384, 샴페인 골드 #C9A96E, 선 rgba(201,169,110,.32)
+   글꼴: 'Noto Serif KR' 200·300(제목), 자간 -0.02em / 영문 포인트 'Bodoni Moda' 이탤릭(골드) / 라벨 'Pretendard Variable' 500, 11px, 대문자, 자간 .32em. 제목 clamp(44px, 6.8vw, 104px), 줄간격 1.1
+   첫 화면: 완전 대칭 가운데 정렬. 위쪽 자간 넓은 대문자 라벨, 얇은 금색 선 사이의 큰 세리프 제목, 그 아래 대화창. 히어로 전체를 1px 금색 선 액자로 두르고 네 모서리에 아르데코 꺾쇠 장식(.deco i), 위쪽에서 은은한 따뜻한 스포트라이트
+   표면: 카드 #141210 + 1px 금색 선, 모서리 2px, 그림자 없음. 버튼은 금색 선 사각 버튼(마우스를 올리면 금색으로 채움)
+   시그니처: 금색 헤어라인 액자와 꺾쇠, 넓은 자간 대문자, 아주 느린 페이드
+   섹션: 기능은 로마 숫자 I–V가 붙은 검은 카드, 목업은 금색 선 그림. 작동 방식 단계는 세로 금색 타임라인. 거대 워드마크는 금색 얇은 세리프
+   말투: 절제되고 품격 있는 문장(예: '한 줄의 생각을, 다섯 개의 작품으로.')
+
+## 2. 고급스러움의 기준 (8개 모두)
+- 타이포가 8할이야. 히어로 제목은 디자인마다 적힌 크기 그대로 크게 쓰고, 첫 화면에 맞추려고 글자를 줄이지 말고 레이아웃(2단, 좁은 소개 폭, 작은 배지)으로 해결해. 제목은 한글 16자 안팎으로 짧게 2~3줄. 본문은 17px·줄간격 1.65·보조색, 작은 라벨은 12px 대문자(영문만)·자간 .14em 이상, 숫자는 font-variant-numeric: tabular-nums. 굵기 대비를 분명하게
+- 여백·그리드: 내용 폭 1200px 안팎, 좌우 여백 clamp(20px, 5vw, 64px), 섹션 위아래 clamp(96px, 12vw, 168px), 간격은 8의 배수, 요소 끝선은 그리드에 맞춰. 빽빽하게 채우지 말고 여백으로 고급스럽게
+- 8개 모두에 넣을 디테일: 섹션마다 번호 라벨('(01)'·'01 —'·'I.'처럼 디자인에 맞게), 버튼·링크의 '→'·'↗', 아주 옅은 그레인(6장 레시피, --grain), 마우스를 올리면 카드가 살짝 떠오르고 목업이 움직이는 반응, 맨 아래 화면 폭을 꽉 채우는 거대한 서비스 이름 워드마크(.footer-mark)
+- 목업은 실제 파일처럼 정성껏: 슬라이드엔 제목 줄과 도형, 포스터엔 큰 제목과 원, 문서엔 색 띠 표지와 글줄, 웹엔 점 3개 브라우저와 히어로·버튼, 엑셀엔 셀 격자와 막대그래프. 디자인 색으로 칠하고 기울기·겹침·그림자로 입체감
+- 하지 마: 이모지 아이콘(🎁·🎲 안내만 예외), 정해지지 않은 글꼴, 모든 섹션 가운데 정렬 반복, '아이콘+제목+설명' 카드를 똑같이 반복하는 뻔한 템플릿, 디자인에 없는 보라·파랑 그라데이션, 글자 빛 번짐 남발, 복잡한 그림 위의 작은 글자, 회색 기본 상자, 기본 파란 링크, 작고 소심한 제목
+- 읽기 쉬움: 본문 글자와 배경 대비 4.5:1 이상, 본문 16px 이상. 어두운 디자인(noir, luxe)은 대화창 글자·표·파일 카드까지 모두 밝은 글자로
+- 글꼴 목록 끝에는 'Pretendard Variable', sans-serif를 붙여 영어 전용 글꼴에서도 한글이 깔끔하게
+- 한글 줄바꿈: 제목·본문 모두 word-break: keep-all, 제목엔 text-wrap: balance
+- 알약·배지·칩·버튼 글자는 한 줄로(white-space: nowrap). 좁은 화면에선 글자를 줄이거나 부가 문구를 숨겨
+- 움직임은 디자인마다 하나씩, 절제해서. 섹션 요소는 화면에 들어올 때 80ms씩 차례로 나타나게. prefers-reduced-motion이면 모두 끔
+- 그림은 이미지 파일 대신 CSS나 인라인 SVG로
+- 8개 모두 데스크톱(1440×900)과 모바일(390×844) 첫 화면 안에 제목부터 입력창 아래 안내 문구까지 다 보여야 하고, 모바일에서 가로 스크롤이 생기면 안 돼. 2단 레이아웃은 900px 아래에서 위아래로
+- 장식(.deco, 큰 숫자, 구슬, 스티커)은 글자 뒤(z-index)에 두고 제목·소개·대화창 글자를 가리지 않게. 모바일에선 화면 가장자리로 밀거나 작게, 겹치면 숨겨. 한글에는 드롭캡을 쓰지 마
+- 다 쓰기 전에 속으로 점검: 8개 디자인의 1440×900 첫 화면을 떠올려 'Pinterest에 저장하고 싶은가? 나머지 7개와 다른 회사 사이트처럼 보이는가?' 아니면 고쳐서 써
+
+## 3. 디자인마다 바꾸는 글
+- 서비스 이름, 첫 화면 글, 입력창 안내, 예시 칩, 마지막 섹션 제목도 디자인 말투에 맞게 디자인마다 따로 지어. 스크립트 맨 앞에 COPY 객체로 두고, data-design이 있으면 그 디자인의 글로 [data-copy] 요소를 채워. 없으면 HTML에 적은 기본 글 그대로
+  const COPY = { glass: { name: "…", eyebrow: "…", title: "…<em>…</em>…", lead: "…", placeholder: "…", chips: ["…", "…", "…"], cta: "…" }, noir: { … }, … 8개 모두 }
+- 서비스 이름은 영문 10자 또는 한글 6자 이내(거대 워드마크로 쓰여). title은 강조할 단어를 <em>으로 감싸고, <em>은 디자인마다 다르게 꾸며. 'AI Creative Agent Team'은 디자인과 상관없이 서비스 이름 옆이나 아래에 부제로 늘 남겨
+- 기본 글(와이어프레임): 서비스 이름 'AI Creative Agent Team', 제목 '한 줄의 아이디어, 다섯 개의 결과물', 소개 '팀장 에이전트가 전문가 다섯에게 일을 나눠, 발표자료부터 예산 분석까지 한 번에 만들어 드려요.', 입력창 안내 '무엇을 만들어 볼까요?', 예시 칩 '가을 학교 축제 기획해 줘' / '탄소중립 캠페인 홍보물 만들어 줘' / '교사 AI 연수 프로그램 제안해 줘'
+
+## 4. 페이지 뼈대 (8개 디자인이 함께 쓰는 HTML. 클래스 이름 그대로)
+1. .preview-note: 와이어프레임일 때만 보이는 작은 안내(html[data-design] .preview-note { display: none })
+2. header.nav: .brand(.brand-mark + data-copy="name" 서비스 이름 + 작은 부제 'AI Creative Agent Team') · .nav-links(기능 · 작동 방식 · 결과물 디자인. 이동한 섹션 제목이 가려지지 않게 각 섹션에 scroll-margin-top: 96px) · .nav-cta '지금 써 보기'(대화창으로 스크롤 후 입력창 포커스). 모바일에선 링크를 숨기고 화면 밖으로 넘치지 않게
+3. section.hero: .deco(장식용 빈 <i> 8개, aria-hidden="true") · .hero-copy(.eyebrow · h1.hero-title · p.hero-lead, 모두 data-copy) · section.chat-card(5장) · .hero-meta(옅은 글자: Microsoft Copilot Studio · Claude Sonnet 5.5 · PowerPoint · Word · Excel · HTML)
+4. section.stats: .stat 4개 — 1번의 요청 · 6명의 에이전트 · 8개의 작업 매뉴얼 · 5개의 파일 (숫자는 화면에 들어오면 0부터 올라감)
+5. section#features.section: .section-head(.kicker 짧은 영어 한 줄 · h2.section-title · p.section-sub) + .feature-grid 안에 article.feature 5개. 카드마다 .mock(순수 HTML/CSS 미니 목업, 마우스를 올리면 살짝 움직임) + 짧은 광고 카피 + 설명 + .file(파일 이름, 모노스페이스)
+   - 발표자료 presentation.pptx: 10장 내외 슬라이드와 발표자 노트
+   - 포스터 poster.html: 브라우저에서 바로 여는 포스터, 인쇄·PDF 저장
+   - 제안서 proposal.docx: 테마 색 표지와 읽기 좋은 흰 본문
+   - 웹페이지 webpage.html: 소개와 신청을 받는 랜딩 페이지
+   - 예산 분석 budget_analysis.xlsx: 숫자 카드와 차트, 합계는 수식으로
+6. section#how.section: .section-head + 궤도 그림(6장 코드) + ol.steps 단계 4개: ① 브리프 — 요청을 한 장짜리 기획서로 정리하고 컬러 테마를 정해요 ② 예산 먼저 — budget-agent가 예산 기준표로 모든 금액의 기준을 잡아요 ③ 원고 — 전문가들이 같은 브리프로 각자 원고를 써요 ④ 파일 5개 — 디자인 규칙에 맞춰 파일을 만들어 한 번에 첨부해요
+7. section#design.section: .section-head + .swatch 5개. 팀이 만드는 파일은 리퀴드 글래스 재질에 주제별 컬러 테마 5가지 — 스카이 #A8D8FF #007AFF 교육·일반 행사 / 팝 #1EC8FF #FF2E93 IT 캠페인·축제 / 네이비 #0B1628 #6EA8FF 공공 보고서·정책 / 그린 #A8E3C4 #12A150 환경·ESG / 코럴 #FFC2B3 #FF6B4A 가족·복지. 결과물 설명이니 이 색은 견본으로만 보여 주고 페이지 디자인 색과 섞지 마
+8. section.prompts: .section-head + 칩이 서로 반대 방향으로 끝없이 흐르는 .marquee 두 줄(가을 학교 축제 · 탄소중립 캠페인 · 교사 AI 연수 · 신제품 런칭 행사 · 진로 체험 주간 · 지역 축제 홍보 · 고객 제안 워크숍 · 학부모 설명회 · 해커톤 · 동아리 박람회). 누르면 대화창으로 올라가 '○○ 기획해 줘'를 입력창에 채움(전송은 내가)
+9. section.cta: .deco + 제목(data-copy="cta") + 대화창으로 가는 버튼
+10. footer.footer: .footer-mark(서비스 이름을 화면 폭에 꽉 차는 거대한 글자로. 6장 맞춤 코드) + 작은 줄(서비스 이름 · Copilot Studio로 만든 멀티 에이전트 · © 2026). data-design이 있을 때만 작은 줄 맨 끝에 '🎲 디자인 키'(예: 🎲 luxe)
+11. button.toast: 대화창이 화면 밖에 있을 때 팀이 작업 중이면 오른쪽 아래에 '팀이 작업 중 · 1:20', 답이 오면 '결과가 도착했어요 ↑'. 누르면 대화창으로
+
+## 5. 대화창 (기능은 그대로, 모양은 디자인대로)
+- 구조는 이 순서와 이름 그대로: <section class="chat-card"> 안에 창 막대 → <div id="webchat"></div> → .chat-foot(예시 칩 → 작업 중 표시 → 제안 칩 → 입력창 .composer → 안내 문구). #webchat은 .chat-card의 직접 자식. 폭은 min(860px, 100%) 안팎(2단 레이아웃이면 그 칸에 맞게)
+- 창 막대(한 줄, 넘치면 말줄임): 서비스 이름과 연결 상태 점(연결 중 회색, 연결되면 초록), 오른쪽 '새 대화'(새로고침)
+- #webchat: 처음엔 높이 200px(인사말이 보일 만큼). 높이는 아래 CSS로만 정해(다른 곳에서 #webchat에 height·min-height 주지 마). 내가 첫 메시지를 보내면(예시 칩 포함) body에 is-started를 붙여 카드를 화면 높이로 키우고 대화창을 화면에 꽉 차게 스크롤. 인사말이 와도 is-started는 붙이지 마
+- 예시 칩 3개(COPY의 chips. 첫 메시지 전에만, 누르면 바로 전송, 한 줄로 두고 넘치면 가로 스크롤·스크롤바 숨김)
+- 내 메시지는 오른쪽 말풍선(디자인 색), 에이전트 메시지는 말풍선 없이 본문처럼(줄간격 1.7, 마크다운 제목·목록·표 깔끔하게). 아바타·이름과 에이전트 메시지 시간은 숨김
+- 입력창: 높이 60px 안팎, 안내 문구는 COPY의 placeholder, 오른쪽 보내기 버튼(비어 있으면 흐리게). textarea는 테두리 없이 outline: none, 포커스되면 입력창 전체가 살짝 강조(.composer:focus-within). 6줄까지 자동으로 늘고 Enter 보내기, Shift+Enter 줄바꿈, 한글 조합 중 Enter 무시(e.isComposing 또는 keyCode 229). 연결 전엔 비활성
+- 제안 버튼(suggestedActions)은 입력창 바로 위 칩
+- 안내 문구(아주 작게): AI는 실수할 수 있어요. 중요한 내용은 확인하세요.
+- 작업 중: 내가 메시지를 보내는 순간 body에 is-working을 붙이고, 에이전트 메시지(type "message")가 올 때까지 유지해(파일을 만드느라 몇 분 동안 아무 신호가 없을 수 있으니 타이머로 끄지 마). 표시 5개(전문가 5명)가 차례로 반짝이고 '팀이 작업 중 · 0:42'처럼 경과 시간. 20초가 지나면 '파일 5개를 만드느라 몇 분 걸릴 수 있어요'. 입력창 테두리엔 아래 CSS의 빛
+- 연결 중엔 '팀을 부르는 중…'. 실패하면 입력창 자리에 차분한 안내 '지금은 팀과 연결할 수 없어요' + 오류 원문(작은 모노스페이스) + '다시 시도'. 빨간 경고창은 쓰지 않음
+
+## 6. 구현 방법
+- 페이지는 평범하게 세로로 스크롤돼(body에 overflow: hidden이나 높이 고정 금지). 대화 내용 스크롤은 #webchat 안에서만. 원래 있던 style="height: 600px"는 삭제
+- 390px 모바일에서도 가로 스크롤이 절대 생기지 않게. 장식이 많으니 .hero, .stats, .section, .prompts, .cta, .footer에 overflow-x: clip을 걸어 장식이 화면 밖으로 넘치지 않게(고정 내비도 화면 폭 안에)
+- 공통 CSS는 아래 :root 변수만 써서 단정한 기본 레이아웃으로 짜(와이어프레임도 깔끔하게). 디자인 블록에서 변수 값을 바꾸고 그 디자인의 규칙을 덧붙여
+- 화면 상태는 body에 is-connected·is-started·is-working·is-error처럼 is- 접두사 클래스로(요소 클래스 이름과 겹치지 않게)
+- 스타일은 클래스 선택자로만. .hero p·.card span처럼 태그 선택자를 섞으면 안쪽의 다른 요소(대화창 글자 등)까지 덮어써서 깨져
+- JS는 </body> 바로 앞의 <script> 하나에 모아(Web Chat CDN과 0장의 디자인 코드 제외). 순서는 ① 디자인별 글 채우기 ② 등장 효과·숫자·버튼·워드마크 맞춤 ③ 대화창 동작 ④ 원래 연결 코드. 여러 곳에서 부르는 함수(대화창으로 이동 등)는 function 선언으로
+- 대화창으로 이동은 언제나 window.scrollTo({ top: 카드.getBoundingClientRect().top + window.scrollY - 88, behavior: "smooth" }) 하나로(scrollIntoView·scroll-padding은 쓰지 마). 입력창 포커스는 focus({ preventScroll: true })
+- 스크롤 등장 효과는 첫 화면 아래 섹션에만, IntersectionObserver로. HTML엔 data-reveal만 달고 숨김 클래스는 스크립트가 붙였다가 화면에 들어오면 떼(스크립트가 실패해도 내용은 보이게)
+- 메시지(인사말 포함)는 Web Chat이 그린 것만 써. 메시지 목록을 따로 그리지 마. styleOptions는 디자인이 정해진 뒤 CSS 변수에서 값을 읽어 이렇게 채워
+  const v = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  { hideSendBox: true, rootHeight: "100%", backgroundColor: "transparent", primaryFont: v("--font-body"), bubbleBackground: "transparent", bubbleBorderWidth: 0, bubbleTextColor: v("--ink"), bubbleMaxWidth: 720, bubbleMinWidth: 0, bubbleFromUserBackground: v("--accent-soft"), bubbleFromUserTextColor: v("--ink"), bubbleFromUserBorderWidth: 0, bubbleFromUserBorderRadius: parseInt(v("--radius")) || 0, subtle: v("--muted"), accent: v("--accent") }
+- 보내기: store.dispatch({ type: "WEB_CHAT/SEND_MESSAGE", payload: { text } })
+- store는 WebChat.createStore({}, 미들웨어)로 만들어 renderWebChat에 같이 넘겨. 미들웨어에서 DIRECT_LINE/CONNECT_FULFILLED(연결됨)와 DIRECT_LINE/INCOMING_ACTIVITY(에이전트 활동 = from.role이 "user"가 아닌 것. type이 "message"면 답 도착, typing은 무시)를 보고 화면을 갱신해
+- hideSendBox를 켜면 Web Chat 제안 버튼도 사라지니 직접 그려. 누르면 value를 메시지로 보내고, openUrl은 새 탭으로
+- 디자인에 쓰는 검증된 레시피
+  /* 그레인: 디자인마다 --grain 값으로 세기 조절 */
+  body::after { content: ""; position: fixed; inset: 0; z-index: 90; pointer-events: none; opacity: var(--grain); background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  /* 그라데이션 테두리 */
+  border: 1px solid transparent; background: linear-gradient(var(--card), var(--card)) padding-box, linear-gradient(140deg, 색1, transparent 45%, 색2) border-box;
+  /* 3D 구슬 */
+  border-radius: 50%; background: radial-gradient(circle at 30% 28%, #fff 0 6%, 밝은 색 34%, 진한 색 80%); box-shadow: inset -14px -18px 34px rgba(0,0,0,.16), 0 40px 70px -30px 진한 색;
+  // 거대 워드마크 맞춤: 화면 폭을 꽉 채우되 넘치지 않게 (.footer-mark는 display: block; white-space: nowrap; overflow: hidden; line-height: .85)
+  function fitMark() { const m = document.querySelector(".footer-mark"); if (!m) return; m.style.fontSize = "22vw"; const r = m.clientWidth / m.scrollWidth; if (r < 1) m.style.fontSize = 22 * r * 0.98 + "vw"; }
+  document.fonts.ready.then(fitMark); addEventListener("resize", fitMark);
+- 아래 CSS는 Web Chat 4.18과 브라우저에서 검증한 코드야. <style>에 그대로 넣어. :root 값은 와이어프레임(디자인 없음)이고, 디자인마다 html[data-design="키"]에서 이 변수들을 덮어써(.composer는 position: relative, .composer::before는 작업 중 빛 전용이니 다른 효과엔 ::after). React·attachmentMiddleware·activityMiddleware는 쓰지 마
+  /* 공통 변수 (와이어프레임 값) */
+  :root { --bg: #F4F4F5; --ink: #18181B; --muted: #6B6B74; --line: #D4D4D8; --card: #FFFFFF; --accent: #18181B; --accent-2: #8B8B94; --accent-soft: #ECECEF; --on-accent: #FFFFFF; --radius: 12px; --border: 1px dashed var(--line); --shadow: none; --blur: none; --grain: 0; --font-body: 'Pretendard Variable', -apple-system, sans-serif; --font-display: 'Pretendard Variable', -apple-system, sans-serif; --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace; --title-weight: 800; --title-tracking: -0.03em; --title-leading: 1.08; }
+  /* 대화창 카드 크기: 처음엔 작게, 첫 메시지를 보내면 화면 높이로 */
+  .chat-card { display: flex; flex-direction: column; }
+  .chat-card > * { flex: none; }
+  .chat-card > #webchat { height: 200px; min-height: 0; }
+  body.is-started .chat-card { height: calc(100svh - 112px); }
+  body.is-started .chat-card > #webchat { flex: 1 1 0; height: auto; min-height: 0; }
+  /* 작업 중 입력창 테두리 빛 */
+  @property --glow { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+  .composer::before { content: ""; position: absolute; inset: -1px; padding: 1.5px; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .6s; background: conic-gradient(from var(--glow), var(--accent), var(--accent-2), var(--accent-soft), var(--accent)); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: glow-spin 6s linear infinite; }
+  body.is-working .composer::before { opacity: .9; }
+  @keyframes glow-spin { to { --glow: 360deg; } }
+  /* Web Chat 기본 요소 정리 + 첨부 파일 카드 */
+  #webchat .webchat__typing-indicator { display: none !important; }
+  #webchat .webchat__stacked-layout:not(.webchat__stacked-layout--from-user) .webchat__stacked-layout__status { display: none; }
+  #webchat .webchat__stacked-layout__attachment-row { margin-top: 8px !important; }
+  #webchat .webchat__stacked-layout__attachment, #webchat .webchat__stacked-layout__attachment .webchat__bubble__content { background: none !important; border: 0 !important; overflow: visible !important; }
+  #webchat .webchat__stacked-layout__content:has(.webchat__fileContent) { overflow: visible !important; }
+  #webchat .webchat__fileContent { padding: 0 !important; }
+  #webchat .webchat__fileContent__buttonLink { display: flex !important; align-items: center; gap: 12px; height: 56px; padding: 0 18px 0 12px; border-radius: var(--radius); text-decoration: none; color: var(--ink); background: var(--card); border: 1px solid var(--line); }
+  #webchat .webchat__fileContent__buttonLink::before { content: "FILE"; flex: none; padding: 5px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font: 600 10.5px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .04em; }
+  #webchat a[download$=".pptx" i]::before { content: "PPTX"; } #webchat a[download$=".docx" i]::before { content: "DOCX"; } #webchat a[download$=".xlsx" i]::before { content: "XLSX"; } #webchat a[download$=".html" i]::before { content: "HTML"; }
+  #webchat .webchat__fileContent__badge { flex: 1; min-width: 0; background: none !important; padding: 0 !important; }
+  #webchat .webchat__fileContent__fileName { font: 13px ui-monospace, SFMono-Regular, Menlo, monospace !important; color: var(--ink) !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #webchat .webchat__fileContent__downloadIcon { flex: none; box-sizing: content-box; width: 16px; height: 16px; padding: 0; fill: var(--muted); color: var(--muted); }
+  /* 에이전트 답의 한글 줄바꿈, 링크, 마크다운 표 */
+  #webchat .webchat__render-markdown { word-break: keep-all; overflow-wrap: anywhere; }
+  #webchat .webchat__render-markdown a { color: var(--accent); }
+  #webchat .webchat__render-markdown table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; border-spacing: 0; margin: 12px 0; font-variant-numeric: tabular-nums; }
+  #webchat .webchat__render-markdown th, #webchat .webchat__render-markdown td { padding: 9px 18px 9px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  #webchat .webchat__render-markdown th { font-size: 12px; font-weight: 600; color: var(--muted); }
+- 작동 방식의 궤도 그림(가운데 팀장 주위를 칩 5개가 도는 그림)은 아래 HTML과 CSS를 그대로 써(칩과 팀장 모양은 디자인마다 꾸며도 되지만 transform·translate·rotate·animation은 건드리지 마. 감싼 카드는 overflow: hidden)
+  <div class="orbit"><div class="orbit-ring"><span class="agent" style="--a:0deg"><b>ppt-agent</b></span><span class="agent" style="--a:72deg"><b>poster-agent</b></span><span class="agent" style="--a:144deg"><b>proposal-agent</b></span><span class="agent" style="--a:216deg"><b>webpage-agent</b></span><span class="agent" style="--a:288deg"><b>budget-agent</b></span></div><div class="leader">팀장</div></div>
+  .orbit { --r: 150px; position: relative; width: calc(var(--r) * 2); aspect-ratio: 1; margin: 48px auto; }
+  .orbit-ring { position: absolute; inset: 0; border-radius: 50%; border: 1px dashed var(--line); animation: orbit-spin 40s linear infinite; }
+  .orbit .agent { position: absolute; left: 50%; top: 50%; transform: rotate(var(--a)) translateX(var(--r)) rotate(calc(-1 * var(--a))); }
+  .orbit .agent b { position: absolute; translate: -50% -50%; white-space: nowrap; padding: 8px 12px; border-radius: 999px; font: 600 12px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--accent); background: var(--card); border: 1px solid var(--line); animation: orbit-spin 40s linear infinite reverse; }
+  .orbit .leader { position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: 112px; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; font-weight: 800; }
+  @keyframes orbit-spin { to { rotate: 360deg; } }
+  @media (max-width: 600px) { .orbit { --r: 100px; } .orbit .agent b { font-size: 10px; padding: 6px 9px; } .orbit .leader { width: 84px; } }
+
+## 7. 반드시 지킬 것 (어기면 채팅이 끊겨)
+1. BROKER_URL과 SEALED 두 줄은 한 글자도 바꾸지 말고 그대로 옮겨. SEALED는 공개돼도 안전한 봉인 값이니 숨기거나 .env·환경 변수·서버로 옮기지 마
+2. 연결 흐름 유지: fetch(BROKER_URL, { method: "POST", body: JSON.stringify({ sealed: SEALED }) }) → WebChat.createDirectLine({ token }) → startConversation 이벤트 → WebChat.renderWebChat(…, locale: "ko-KR"). fetch에 headers를 추가하지 마
+3. botframework-webchat 4.18.0 CDN을 그대로 써. 다른 채팅 라이브러리, React·Vue·Tailwind, npm·빌드 도구 금지. 외부 파일은 Web Chat, Pretendard(https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css), 0장 코드가 불러오는 글꼴만
+4. index.html 파일 하나에 HTML·CSS·JS를 모두 넣어 GitHub Pages에 올리면 바로 동작하게
+5. 이 페이지는 내 https://아이디.github.io 에서만 연결돼. 로컬이나 미리보기에서 '연결하지 못했습니다'가 떠도 정상이니 연결 코드를 고치지 마
+
+## 8. 결과
+- 답에는 완성된 index.html 전체를 코드 블록 하나로만 줘. 디자인 8개를 하나도 빠짐없이, '기존과 동일' 같은 생략 없이 처음부터 끝까지 (파일을 직접 고칠 수 있는 환경이면 index.html을 바로 수정)
+- 코드 앞뒤에 설명이나 요약을 쓰지 마. 특히 디자인이 몇 개인지, 어떻게 정해지는지, 어떤 디자인이 나올지는 절대 말하지 마. 친구들이 배포한 페이지를 처음 열 때 놀라게 하려는 거야. 코드 아래에는 이 한 줄만: 이 코드를 index.html에 붙여 넣고 Commit한 뒤, 내 github.io 주소에서 열어 보세요 🎁
+- 학생들의 AI 도구가 한 번에 출력할 수 있게 전체가 120KB를 넘지 않게: 공통 CSS 25KB, 디자인마다 8KB 안팎, HTML 14KB, JS 16KB 안팎. CSS는 한 줄에 규칙 하나, COPY는 디자인마다 한 줄, 주석은 디자인 이름만
+- 이 페이지를 올린 뒤 내가 고쳐 달라고 하면, 고친 코드를 올릴 때 디자인이 다시 바뀌지 않게 먼저 내 페이지 맨 아래 '🎲' 옆 디자인 키를 물어봐. 그다음 디자인 정하기 코드의 d를 그 키로 고정하고, 나머지 7개 디자인의 CSS와 COPY는 지운 뒤 고쳐 줘
