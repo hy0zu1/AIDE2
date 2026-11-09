@@ -555,6 +555,7 @@
     let waitingForReport = false;
     let reportFlowStage = "idle";
     let reportGenerationPending = false;
+    let reportTypingTimer = 0;
     const waitingGame = {
       active: false,
       frame: 0,
@@ -579,8 +580,8 @@
 
     function jumpInGame() {
       if (!waitingGame.active || waitingGame.playerY > 0) return;
-      waitingGame.velocityY = 480;
-      waitingGame.jumpHoldRemaining = 0.32;
+      waitingGame.velocityY = 400;
+      waitingGame.jumpHoldRemaining = 0.22;
     }
 
     function holdJump() {
@@ -594,6 +595,8 @@
     }
 
     function finishWaitingGame() {
+      window.clearTimeout(reportTypingTimer);
+      reportTypingTimer = 0;
       waitingGame.active = false;
       cancelAnimationFrame(waitingGame.frame);
       waitingGame.obstacles.forEach((obstacle) => obstacle.element.remove());
@@ -619,10 +622,25 @@
 
     function handleBotActivity(activity) {
       if (!activity || !activity.from || activity.from.role === "user") return;
+      if (activity.type === "typing") {
+        if (reportGenerationPending && !reportTypingTimer) {
+          reportTypingTimer = window.setTimeout(() => {
+            reportTypingTimer = 0;
+            if (!reportGenerationPending) return;
+            reportGenerationPending = false;
+            reportFlowStage = "generating";
+            startWaitingGame();
+            setWorking("AIDE가 보고서를 작성하고 있어요...");
+          }, 700);
+        }
+        return;
+      }
       if (activity.type !== "message") return;
 
       const text = typeof activity.text === "string" ? activity.text : "";
       if (isInformationCollectionPrompt(text)) {
+        window.clearTimeout(reportTypingTimer);
+        reportTypingTimer = 0;
         finishWaitingGame();
         reportGenerationPending = false;
         reportFlowStage = /개인\s*정보/i.test(text) ? "awaiting_privacy" : "awaiting_memo";
@@ -643,9 +661,19 @@
         return;
       }
       if (reportGenerationPending && /[?？]|(?:알려|입력|작성|선택)해\s*주세요|원하시나요|어떠신가요/.test(text)) {
+        window.clearTimeout(reportTypingTimer);
+        reportTypingTimer = 0;
         reportGenerationPending = false;
         reportFlowStage = "awaiting_followup";
         setWorking("AIDE가 보고서에 필요한 내용을 확인하고 있어요.");
+        return;
+      }
+      if (reportGenerationPending && reportTypingTimer) {
+        window.clearTimeout(reportTypingTimer);
+        reportTypingTimer = 0;
+        reportGenerationPending = false;
+        reportFlowStage = "complete";
+        setWorking("답변이 도착했어요. 더 필요한 내용을 요청해 보세요.");
       }
     }
 
@@ -682,9 +710,9 @@
         waitingGame.distance += waitingGame.speed * delta;
         waitingGame.speed = Math.min(390, 250 + waitingGame.elapsed * 3);
         waitingGame.spawnIn -= delta;
-        const holdLift = waitingGame.jumpHeld && waitingGame.jumpHoldRemaining > 0 ? 900 : 0;
+        const holdLift = waitingGame.jumpHeld && waitingGame.jumpHoldRemaining > 0 ? 600 : 0;
         waitingGame.jumpHoldRemaining = Math.max(0, waitingGame.jumpHoldRemaining - delta);
-        waitingGame.velocityY -= (1350 - holdLift) * delta;
+        waitingGame.velocityY -= (1550 - holdLift) * delta;
         waitingGame.playerY = Math.max(0, waitingGame.playerY + waitingGame.velocityY * delta);
         if (waitingGame.playerY === 0) waitingGame.velocityY = 0;
         gameRunner.style.transform = "translateY(-" + waitingGame.playerY + "px)";
