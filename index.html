@@ -292,13 +292,27 @@
     html[data-design="luxe"] .deco i::after { right: -1px; bottom: -1px; border-right: 2px solid; border-bottom: 2px solid; }
     html[data-design="luxe"] .footer-mark { font-weight: 300; letter-spacing: .04em; }
 
-    html[data-design="glass"] { --page: #f3f8fa; --accent: #3979c9; --accent-soft: #e4f3ee; }
-    html[data-design="glass"] .hero { background: radial-gradient(ellipse at 12% 18%, #8bb9ff70, transparent 37%), radial-gradient(ellipse at 82% 15%, #9de5d477, transparent 34%), radial-gradient(ellipse at 78% 92%, #8fe1ed88, transparent 35%), radial-gradient(ellipse at 25% 90%, #d2f0e288, transparent 33%), #f5f9fa; }
-    html[data-design="glass"] h1 em { background-image: linear-gradient(120deg, #3979c9, #328fc0 48%, #36a879); }
-    html[data-design="glass"] .deco i { background: radial-gradient(circle at 30% 25%, #fff, #8bb9ff 42%, #8edbc4 82%); box-shadow: inset -12px -14px 22px #387e9c33, 0 18px 30px #4f94a530; }
-    html[data-design="glass"] .deco i:nth-child(2) { background: radial-gradient(circle at 30% 25%, #fff, #8fe1ed, #86d6b3); }
-    html[data-design="glass"] .deco i:nth-child(3) { background: radial-gradient(circle at 30% 25%, #fff, #a5e8d1, #8bb9ff); }
-    html[data-design="glass"] .footer-mark { background-image: linear-gradient(120deg, #3979c9, #328fc0, #36a879); }
+    html[data-design="glass"] { --page: #f3f7f7; --card: #ffffff; --ink: #203239; --muted: #647779; --line: #dce7e5; --accent: #347cba; --accent-soft: #e8f2ef; --radius: 18px; --shadow: 0 12px 36px #234d4010; --grain: 0; }
+    html[data-design="glass"] body { background: #f3f7f7; }
+    html[data-design="glass"] .hero { min-height: 0; margin-top: 12px; border: 1px solid #e1eae8; border-radius: 22px; background: #ffffff; }
+    html[data-design="glass"] .hero-inner { grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr); gap: clamp(30px, 5vw, 64px); text-align: left; }
+    html[data-design="glass"] .hero-copy { max-width: 470px; margin: 0; }
+    html[data-design="glass"] .hero-description { margin: 17px 0 0; }
+    html[data-design="glass"] .eyebrow, html[data-design="glass"] .kicker { font-family: var(--font); font-size: 11px; font-style: normal; font-weight: 700; letter-spacing: .11em; }
+    html[data-design="glass"] h1 { max-width: 620px; margin: 0; font-size: clamp(44px, 5vw, 68px); font-weight: 750; letter-spacing: -.055em; line-height: 1.14; }
+    html[data-design="glass"] h1 em { color: #31866f; background: none; font-style: normal; }
+    html[data-design="glass"] .hero-meta span { border-color: #e1eae8; border-radius: 8px; background: #f7faf9; }
+    html[data-design="glass"] .chat-card { border-color: #e1eae8; border-radius: 16px; background: #fff; box-shadow: 0 8px 26px #234d400c; backdrop-filter: none; }
+    html[data-design="glass"] .deco { display: none; }
+    html[data-design="glass"] .feature { border-color: #e1eae8; border-radius: 14px; background: #fff; box-shadow: none; backdrop-filter: none; }
+    html[data-design="glass"] .feature:hover { box-shadow: 0 8px 24px #234d4010; }
+    html[data-design="glass"] .mockup { border-radius: 6px; background: #f2f7f5; }
+    html[data-design="glass"] .report-sheet { border-radius: 4px; box-shadow: none; transform: none; }
+    html[data-design="glass"] .footer-mark { color: #347cba; background: none; }
+    @media (max-width: 780px) {
+      html[data-design="glass"] .hero-inner { grid-template-columns: 1fr; gap: 24px; }
+      html[data-design="glass"] .hero-copy { max-width: none; }
+    }
     html[data-design="noir"] { --accent: #78aaff; --accent-soft: #14251f; --shadow: 0 25px 90px #227fb522; }
     html[data-design="noir"] body { background: radial-gradient(ellipse at 50% 0, #183d5555, transparent 40rem), repeating-linear-gradient(0deg, transparent 0 63px, #ffffff08 64px), repeating-linear-gradient(90deg, transparent 0 63px, #ffffff08 64px), #08090a; }
     html[data-design="noir"] .hero { background: radial-gradient(ellipse at 55% 0, #3777bb24, transparent 45%), #08090a; }
@@ -431,7 +445,7 @@
     const workStatus = document.getElementById("work-status");
     const selectedDesign = document.documentElement.getAttribute("data-design");
     const COPY = {
-      glass: { brand: "AIDE", navCta: "보고서 작성하기 ↗", eyebrow: "YOUR FIELD PRACTICE REPORT AIDE", title: "현장의 기록을,<br><em>보고서의 완성으로.</em>", description: "실습 중 적어 둔 메모를 입력해 주세요. AIDE가 핵심 내용을 정리해 보고서 초안 작성을 도와드려요.", featureKicker: "AIDE, BY YOUR SIDE", featureTitle: "하루의 경험을 차분히 정리해요.", featureDescription: "짧은 메모에서 시작해 읽기 쉬운 실습 보고서 초안으로 다듬어 보세요.", howKicker: "A GENTLE PROCESS", howTitle: "기록에서 보고서까지, 함께.", howDescription: "편하게 적고, 필요한 부분을 대화로 고쳐가면 돼요.", step1Title: "경험을 적고", step1Text: "현장에서 한 업무와 기억에 남은 일을 입력해요.", step2Title: "핵심을 정리하고", step2Text: "메모에 담긴 주요 내용을 읽기 쉽게 정돈해요.", step3Title: "초안을 만들고", step3Text: "정리한 기록을 바탕으로 보고서 작성을 도와요.", step4Title: "함께 다듬어요", step4Text: "원하는 표현과 빠진 내용을 대화로 보완해요.", ctaKicker: "A NOTE TO YOUR FUTURE SELF", ctaTitle: "오늘의 실습을 기록해 보세요.", ctaText: "AIDE가 보고서 작성을 함께할게요.", ctaButton: "기록 시작하기 →", footerMark: "AIDE", chatTitle: "AIDE · 현장 실습 보고서 도우미", placeholder: "오늘의 실습 내용을 편하게 적어주세요...", hint: "메모를 바탕으로 초안을 만들고 대화로 다듬을 수 있어요." },
+      glass: { brand: "AIDE", navCta: "보고서 작성하기 ↗", eyebrow: "현장 실습 보고서 작성", title: "오늘의 실습을<br><em>차분히 정리해요.</em>", description: "실습 중 맡았던 업무와 기억에 남은 일을 적어주세요. 보고서 초안을 함께 정리해볼게요.", featureKicker: "AIDE가 도와드려요", featureTitle: "실습 내용을 보고서로 정리해요.", featureDescription: "짧은 메모에서 시작해 읽기 쉬운 실습 보고서 초안으로 다듬어 보세요.", howKicker: "사용 방법", howTitle: "기록에서 보고서까지.", howDescription: "편하게 적고, 필요한 부분을 대화로 고쳐가면 돼요.", step1Title: "경험을 적고", step1Text: "현장에서 한 업무와 기억에 남은 일을 입력해요.", step2Title: "핵심을 정리하고", step2Text: "메모에 담긴 주요 내용을 읽기 쉽게 정돈해요.", step3Title: "초안을 만들고", step3Text: "정리한 기록을 바탕으로 보고서 작성을 도와요.", step4Title: "함께 다듬어요", step4Text: "원하는 표현과 빠진 내용을 대화로 보완해요.", ctaKicker: "오늘의 기록", ctaTitle: "실습 내용을 기록해 보세요.", ctaText: "AIDE와 함께 보고서 초안을 정리해요.", ctaButton: "기록 시작하기 →", footerMark: "AIDE", chatTitle: "현장 실습 보고서", placeholder: "오늘 맡았던 업무나 기억에 남는 일을 적어주세요...", hint: "작성된 초안은 실제 실습 경험과 맞는지 확인해 주세요." },
       noir: { brand: "AIDE", navCta: "시작하기 →", eyebrow: "FIELD PRACTICE / REPORT AIDE", title: "실습 기록.<br><em>보고서 완성.</em>", description: "현장 메모를 입력하세요. AIDE가 보고서 초안 작성을 돕습니다.", featureKicker: "FROM NOTES TO REPORT", featureTitle: "기록을 정리하고, 초안으로.", featureDescription: "필요한 내용에 집중해 대화로 빠르게 다듬어 보세요.", howKicker: "WORKFLOW", howTitle: "메모에서 제출 전 검토까지.", howDescription: "실습 내용을 입력하고 AIDE와 대화를 이어가세요.", step1Title: "메모 입력", step1Text: "실습 중 한 업무와 경험을 적으세요.", step2Title: "내용 정리", step2Text: "핵심을 읽기 쉽게 구조화합니다.", step3Title: "초안 작성", step3Text: "보고서 초안 작성을 지원합니다.", step4Title: "함께 수정", step4Text: "필요한 부분을 대화로 다듬습니다.", ctaKicker: "AIDE / READY", ctaTitle: "실습 기록을 시작하세요.", ctaText: "AIDE가 보고서 작성을 돕습니다.", ctaButton: "AIDE 열기 ↗", footerMark: "AIDE", chatTitle: "AIDE / REPORT AIDE", placeholder: "실습 메모 입력...", hint: "초안을 확인한 뒤 필요한 내용을 이어서 요청하세요." },
       editorial: { brand: "AIDE · 현장 기록", navCta: "기록 시작 →", eyebrow: "FIELD NOTES — AIDE", title: "오늘의 경험을,<br><em>한 편의 보고서로.</em>", description: "Editor’s note — 현장에서 마주한 일과 배움을 메모로 남겨주세요. AIDE가 그 기록을 보고서 초안으로 정리하도록 돕습니다.", featureKicker: "NOTES, GATHERED WITH CARE", featureTitle: "실습의 순간을 기록으로 남기기.", featureDescription: "업무 내용부터 배운 점까지, 기록의 흐름을 차분히 정리합니다.", howKicker: "CONTENTS — 작성 순서", howTitle: "기록이 보고서가 되는 과정.", howDescription: "한 단계씩 대화로 내용을 더하고 정돈해요.", step1Title: "현장을 기록하고", step1Text: "오늘 맡은 업무와 기억에 남은 일을 적습니다.", step2Title: "배운 점을 모으고", step2Text: "경험에서 얻은 생각을 함께 정리합니다.", step3Title: "초안을 구성하고", step3Text: "기록을 바탕으로 보고서 작성을 지원합니다.", step4Title: "문장을 고칩니다", step4Text: "표현과 내용을 확인하며 다듬습니다.", ctaKicker: "A NOTE TO BEGIN", ctaTitle: "오늘의 기록을 남겨주세요.", ctaText: "AIDE와 함께 실습 보고서를 정리해요.", ctaButton: "첫 문장 쓰기 →", footerMark: "AIDE", chatTitle: "AIDE — 현장 실습 기록", placeholder: "오늘 기억하고 싶은 실습 경험은 무엇인가요?", hint: "사실에 맞게 내용을 확인하고 필요한 부분을 수정해 주세요." },
       swiss: { brand: "AIDE / REPORT", navCta: "시작 →", eyebrow: "(01) FIELD PRACTICE AIDE", title: "FIELD NOTES.<br><em>REPORT READY.</em>", description: "실습 기록 입력. 핵심 내용 정리. 보고서 초안 작성 지원.", featureKicker: "(02) WHAT AIDE DOES", featureTitle: "기록에서 보고서 초안까지.", featureDescription: "내 메모를 바탕으로 내용을 구조화하고 문장을 다듬습니다.", howKicker: "(03) PROCESS", howTitle: "네 단계. 하나의 기록.", howDescription: "업무와 배움을 기록하고, 대화로 필요한 내용을 완성하세요.", step1Title: "입력", step1Text: "실습 중 한 일을 적습니다.", step2Title: "정리", step2Text: "기록의 핵심을 묶습니다.", step3Title: "초안", step3Text: "보고서 작성을 지원합니다.", step4Title: "검토", step4Text: "내용을 확인하고 수정합니다.", ctaKicker: "(04) START HERE", ctaTitle: "실습 기록을 시작.", ctaText: "AIDE가 초안 작성을 돕습니다.", ctaButton: "기록하기 →", footerMark: "AIDE", chatTitle: "AIDE / FIELD REPORT", placeholder: "실습 내용 입력...", hint: "정확한 경험을 바탕으로 초안을 검토하세요." },
