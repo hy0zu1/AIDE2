@@ -576,7 +576,7 @@
 
     function jumpInGame() {
       if (!waitingGame.active || waitingGame.playerY > 0) return;
-      waitingGame.velocityY = 400;
+      waitingGame.velocityY = 420;
       waitingGame.jumpHoldRemaining = 0.22;
     }
 
@@ -698,7 +698,7 @@
         waitingGame.distance += waitingGame.speed * delta;
         waitingGame.speed = Math.min(390, 250 + waitingGame.elapsed * 3);
         waitingGame.spawnIn -= delta;
-        const holdLift = waitingGame.jumpHeld && waitingGame.jumpHoldRemaining > 0 ? 600 : 0;
+        const holdLift = waitingGame.jumpHeld && waitingGame.jumpHoldRemaining > 0 ? 1300 : 0;
         waitingGame.jumpHoldRemaining = Math.max(0, waitingGame.jumpHoldRemaining - delta);
         waitingGame.velocityY -= (1550 - holdLift) * delta;
         waitingGame.playerY = Math.max(0, waitingGame.playerY + waitingGame.velocityY * delta);
