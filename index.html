@@ -551,6 +551,7 @@
     let waitingForReport = false;
     let reportFlowStage = "idle";
     let reportGenerationPending = false;
+    let reportTypingTimer = 0;
     const waitingGame = {
       active: false,
       frame: 0,
@@ -590,6 +591,8 @@
     }
 
     function finishWaitingGame() {
+      window.clearTimeout(reportTypingTimer);
+      reportTypingTimer = 0;
       waitingGame.active = false;
       cancelAnimationFrame(waitingGame.frame);
       waitingGame.obstacles.forEach((obstacle) => obstacle.element.remove());
@@ -615,10 +618,25 @@
 
     function handleBotActivity(activity) {
       if (!activity || !activity.from || activity.from.role === "user") return;
+      if (activity.type === "typing") {
+        if (reportGenerationPending && !reportTypingTimer) {
+          reportTypingTimer = window.setTimeout(() => {
+            reportTypingTimer = 0;
+            if (!reportGenerationPending) return;
+            reportGenerationPending = false;
+            reportFlowStage = "generating";
+            startWaitingGame();
+            setWorking("AIDE가 보고서를 작성하고 있어요...");
+          }, 700);
+        }
+        return;
+      }
       if (activity.type !== "message") return;
 
       const text = typeof activity.text === "string" ? activity.text : "";
       if (isInformationCollectionPrompt(text)) {
+        window.clearTimeout(reportTypingTimer);
+        reportTypingTimer = 0;
         finishWaitingGame();
         reportGenerationPending = false;
         reportFlowStage = /개인\s*정보/i.test(text) ? "awaiting_privacy" : "awaiting_memo";
@@ -639,6 +657,8 @@
         return;
       }
       if (reportGenerationPending && /[?？]|(?:알려|입력|작성|선택)해\s*주세요|원하시나요|어떠신가요/.test(text)) {
+        window.clearTimeout(reportTypingTimer);
+        reportTypingTimer = 0;
         reportGenerationPending = false;
         reportFlowStage = "awaiting_followup";
         setWorking("AIDE가 보고서에 필요한 내용을 확인하고 있어요.");
