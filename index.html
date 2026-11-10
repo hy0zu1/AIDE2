@@ -106,8 +106,21 @@
     .waiting-game__top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .waiting-game__hint { margin: 5px 0 12px; color: var(--muted); font-size: 11px; line-height: 1.5; }
     .waiting-game__stage { position: relative; height: 126px; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: var(--accent-soft); }
+    .waiting-game__cloud { position: absolute; top: 20%; left: 18%; width: 58px; height: 17px; border-radius: 20px; background: #fff; opacity: .8; pointer-events: none; animation: cloud-drift 12s ease-in-out infinite alternate; }
+    .waiting-game__cloud::before, .waiting-game__cloud::after { position: absolute; bottom: 5px; border-radius: 50%; background: inherit; content: ""; }
+    .waiting-game__cloud::before { left: 11px; width: 21px; height: 21px; }
+    .waiting-game__cloud::after { right: 9px; width: 16px; height: 16px; }
+    .waiting-game__cloud--far { top: 39%; left: 69%; transform: scale(.7); opacity: .48; animation-delay: -5s; }
+    .waiting-game__bird { position: absolute; top: 24%; left: 57%; width: 16px; height: 8px; pointer-events: none; animation: bird-drift 5s ease-in-out infinite alternate; }
+    .waiting-game__bird::before, .waiting-game__bird::after { position: absolute; top: 3px; width: 9px; height: 5px; border-top: 2px solid var(--muted); border-radius: 50%; content: ""; }
+    .waiting-game__bird::before { right: 7px; transform: rotate(20deg); }
+    .waiting-game__bird::after { left: 7px; transform: rotate(-20deg); }
     .waiting-game__ground { position: absolute; right: 0; bottom: 14px; left: 0; height: 1px; background: var(--muted); opacity: .5; }
     .waiting-game__runner { position: absolute; bottom: 15px; left: 42px; z-index: 1; font-size: 27px; line-height: 1; user-select: none; }
+    .waiting-game__runner.is-loved::after { position: absolute; bottom: 85%; left: 50%; color: #e85c83; content: "❤️"; font-size: 18px; animation: heart-pop .9s ease-out both; pointer-events: none; }
+    @keyframes cloud-drift { to { translate: 24px 0; } }
+    @keyframes bird-drift { to { translate: 18px -5px; } }
+    @keyframes heart-pop { 0% { opacity: 0; transform: translate(-50%, 8px) scale(.5); } 25% { opacity: 1; transform: translate(-50%, -2px) scale(1.15); } 100% { opacity: 0; transform: translate(-50%, -20px) scale(.9); } }
     .waiting-game__obstacle { position: absolute; bottom: 15px; left: 0; width: 17px; background: transparent; }
     .waiting-game__obstacle::before { position: absolute; right: 4px; bottom: 0; left: 4px; height: 100%; border-radius: 5px 5px 2px 2px; background: var(--accent); content: ""; }
     .waiting-game__obstacle::after { position: absolute; top: 42%; left: 0; width: 7px; height: 7px; border-top: 3px solid var(--accent); border-left: 3px solid var(--accent); border-radius: 4px 0 0; content: ""; }
@@ -327,6 +340,8 @@
     html[data-design="glass"] .eyebrow, html[data-design="glass"] .kicker { font-family: var(--font); font-size: 11px; font-style: normal; font-weight: 700; letter-spacing: .11em; }
     html[data-design="glass"] h1 { max-width: 620px; margin: 0; font-size: clamp(44px, 5vw, 68px); font-weight: 750; letter-spacing: -.055em; line-height: 1.14; }
     html[data-design="glass"] h1 em { color: #31866f; background: none; font-style: normal; }
+    html[data-design="glass"] h1 em { display: inline-block; max-width: 100%; font-size: clamp(32px, .86em, 58px); white-space: nowrap; }
+    html[data-design="glass"] .hero-description { max-width: 560px; }
     html[data-design="glass"] .hero-meta span { border-color: #e1eae8; border-radius: 8px; background: #f7faf9; }
     html[data-design="glass"] .chat-card { border-color: #e1eae8; border-radius: 16px; background: #fff; box-shadow: 0 8px 26px #234d400c; backdrop-filter: none; }
     html[data-design="glass"] .deco { display: none; }
@@ -338,6 +353,9 @@
     @media (max-width: 780px) {
       html[data-design="glass"] .hero-inner { grid-template-columns: 1fr; gap: 24px; }
       html[data-design="glass"] .hero-copy { max-width: none; }
+    }
+    @media (max-width: 560px) {
+      html[data-design="glass"] h1 em { font-size: clamp(24px, 9.5vw, 42px); }
     }
     html[data-design="noir"] { --accent: #78aaff; --accent-soft: #14251f; --shadow: 0 25px 90px #227fb522; }
     html[data-design="noir"] body { background: radial-gradient(ellipse at 50% 0, #183d5555, transparent 40rem), repeating-linear-gradient(0deg, transparent 0 63px, #ffffff08 64px), repeating-linear-gradient(90deg, transparent 0 63px, #ffffff08 64px), #08090a; }
@@ -428,6 +446,7 @@
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+      .waiting-game__runner.is-loved::after { animation: none; opacity: 1; transform: translateX(-50%); }
     }
   </style>
 </head>
@@ -470,6 +489,9 @@
             <p class="waiting-game__hint">짧게 누르면 낮게, 길게 누르면 높이 점프해요. 스페이스바나 ↑ 키도 사용할 수 있어요.</p>
             <div class="waiting-game__stage" id="waiting-game-stage" aria-label="장애물 달리기 게임">
               <div class="waiting-game__ground"></div>
+              <span class="waiting-game__cloud" aria-hidden="true"></span>
+              <span class="waiting-game__cloud waiting-game__cloud--far" aria-hidden="true"></span>
+              <span class="waiting-game__bird" aria-hidden="true"></span>
               <span class="waiting-game__runner" id="waiting-game-runner" aria-hidden="true">🦖</span>
             </div>
             <p class="waiting-game__score" id="waiting-game-score">점수 0</p>
@@ -551,6 +573,10 @@
       const placeholder = document.querySelector("[data-copy-placeholder]");
       if (placeholder) placeholder.placeholder = COPY[selectedDesign].placeholder;
     }
+    if (selectedDesign === "glass") {
+      const description = document.querySelector('[data-copy="description"]');
+      description.innerHTML = COPY.glass.description.replace("적어주세요. ", "적어주세요.<br>");
+    }
 
     let directLine;
     let localPreview = false;
@@ -581,6 +607,8 @@
     const gameHint = document.querySelector(".waiting-game__hint");
     const gameJumpButton = document.getElementById("waiting-game-jump");
     const gamePauseButton = document.getElementById("waiting-game-pause");
+    let dinoHoldTimer = 0;
+    let dinoHeartTimer = 0;
 
     function jumpInGame() {
       if (!waitingGame.active || waitingGame.paused || waitingGame.playerY > 0) return;
@@ -596,6 +624,21 @@
 
     function releaseJump() {
       waitingGame.jumpHeld = false;
+    }
+
+    function clearDinoHold() {
+      window.clearTimeout(dinoHoldTimer);
+      dinoHoldTimer = 0;
+    }
+
+    function showDinoHeart() {
+      clearDinoHold();
+      gameRunner.classList.add("is-loved");
+      window.clearTimeout(dinoHeartTimer);
+      dinoHeartTimer = window.setTimeout(() => {
+        gameRunner.classList.remove("is-loved");
+        dinoHeartTimer = 0;
+      }, 900);
     }
 
     function finishWaitingGame() {
@@ -794,6 +837,12 @@
       if (event.detail === 0) jumpInGame();
     });
     gamePauseButton.addEventListener("click", toggleWaitingGamePause);
+    gameRunner.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) return;
+      clearDinoHold();
+      dinoHoldTimer = window.setTimeout(showDinoHeart, 320);
+    });
+    gameRunner.addEventListener("pointercancel", clearDinoHold);
     document.getElementById("workspace-back").addEventListener("click", () => {
       finishWaitingGame();
       document.body.classList.remove("is-started");
@@ -806,8 +855,14 @@
       gameStage.setPointerCapture(event.pointerId);
       holdJump();
     });
-    gameStage.addEventListener("pointerup", releaseJump);
-    gameStage.addEventListener("pointercancel", releaseJump);
+    gameStage.addEventListener("pointerup", () => {
+      clearDinoHold();
+      releaseJump();
+    });
+    gameStage.addEventListener("pointercancel", () => {
+      clearDinoHold();
+      releaseJump();
+    });
     document.addEventListener("keydown", (event) => {
       if (!gamePanel.hidden && document.activeElement !== gamePauseButton &&
           (event.code === "Space" || event.code === "ArrowUp") &&
