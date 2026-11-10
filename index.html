@@ -78,6 +78,7 @@
     .hero-description { max-width: 480px; margin: 20px 0 0; color: var(--muted); font-size: 17px; line-height: 1.7; word-break: keep-all; }
     .hero-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; color: var(--muted); font-size: 12px; }
     .hero-meta span { padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; }
+    .hero-copy .return-to-game { margin-top: 20px; padding: 0 16px; }
     .deco { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
     .deco i { position: absolute; display: block; }
     .chat-card { position: relative; z-index: 2; width: 100%; max-width: 860px; min-width: 0; margin: 0 auto; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow); }
@@ -467,6 +468,7 @@
           <h1 data-copy="title">현장의 기록을,<br><em>보고서의 완성으로.</em></h1>
           <p class="hero-description" data-copy="description">실습 중 적어 둔 메모를 입력해 주세요. AIDE가 핵심 내용을 정리해 현장 실습 보고서 초안 작성을 도와드려요.</p>
           <div class="hero-meta"><span data-copy="metaOne">01 실습 메모 입력</span><span data-copy="metaTwo">02 함께 다듬고 완성</span></div>
+          <button class="waiting-game__button waiting-game__button--primary return-to-game" id="return-to-game" type="button" hidden>게임 화면으로 돌아가기</button>
         </div>
         <div class="assistant-workspace">
           <section class="chat-card" aria-label="AIDE 현장 실습 보고서 대화창">
@@ -498,6 +500,7 @@
             <div class="waiting-game__controls">
               <button class="waiting-game__button waiting-game__button--primary" id="waiting-game-jump" type="button">점프</button>
               <button class="waiting-game__button" id="waiting-game-pause" type="button" aria-pressed="false">일시정지</button>
+              <button class="waiting-game__button" id="waiting-game-restart" type="button" hidden>다시 시작</button>
             </div>
           </aside>
           </div>
@@ -596,6 +599,7 @@
       jumpHeld: false,
       jumpHoldRemaining: 0,
       paused: false,
+      gameOver: false,
       update: null,
       spawnIn: 1.1,
       obstacles: []
@@ -607,8 +611,11 @@
     const gameHint = document.querySelector(".waiting-game__hint");
     const gameJumpButton = document.getElementById("waiting-game-jump");
     const gamePauseButton = document.getElementById("waiting-game-pause");
+    const gameRestartButton = document.getElementById("waiting-game-restart");
+    const returnToGameButton = document.getElementById("return-to-game");
     let dinoHoldTimer = 0;
     let dinoHeartTimer = 0;
+    let resumeGameWhenReturning = false;
 
     function jumpInGame() {
       if (!waitingGame.active || waitingGame.paused || waitingGame.playerY > 0) return;
@@ -717,7 +724,11 @@
       }
     }
 
-    function startWaitingGame() {
+    function startWaitingGame(restart = false) {
+      if (!restart && (waitingGame.active || waitingGame.paused || waitingGame.gameOver)) {
+        waitingForReport = true;
+        return;
+      }
       cancelAnimationFrame(waitingGame.frame);
       waitingGame.obstacles.forEach((obstacle) => obstacle.element.remove());
       waitingGame.obstacles = [];
@@ -731,6 +742,7 @@
       waitingGame.jumpHeld = false;
       waitingGame.jumpHoldRemaining = 0;
       waitingGame.paused = false;
+      waitingGame.gameOver = false;
       waitingGame.spawnIn = 2;
       waitingForReport = true;
       document.body.classList.add("is-waiting");
@@ -738,9 +750,10 @@
         ? "화면 미리보기용 게임이에요. 짧게 누르면 낮게, 길게 누르면 높이 뛰어요."
         : "보고서를 기다리는 동안 장애물을 피해 보세요. 짧게 누르면 낮게, 길게 누르면 높이 뛰어요.";
       gameRunner.style.transform = "";
-      gameScore.textContent = "점수 0";
+      gameScore.textContent = "점수 0 · 난이도 1";
       gameJumpButton.disabled = false;
       gamePauseButton.disabled = false;
+      gameRestartButton.hidden = true;
       gamePauseButton.textContent = "일시정지";
       gamePauseButton.setAttribute("aria-pressed", "false");
       gamePanel.hidden = false;
@@ -751,7 +764,9 @@
         waitingGame.lastTime = time;
         waitingGame.elapsed += delta;
         waitingGame.distance += waitingGame.speed * delta;
-        waitingGame.speed = Math.min(390, 250 + waitingGame.elapsed * 3);
+        const score = Math.floor(waitingGame.distance / 10);
+        const difficulty = Math.min(8, Math.floor(score / 100));
+        waitingGame.speed = Math.min(390, 250 + difficulty * 18);
         waitingGame.spawnIn -= delta;
         const holdLift = waitingGame.jumpHeld && waitingGame.jumpHoldRemaining > 0 ? 1300 : 0;
         waitingGame.jumpHoldRemaining = Math.max(0, waitingGame.jumpHoldRemaining - delta);
@@ -759,7 +774,7 @@
         waitingGame.playerY = Math.max(0, waitingGame.playerY + waitingGame.velocityY * delta);
         if (waitingGame.playerY === 0) waitingGame.velocityY = 0;
         gameRunner.style.transform = "translateY(-" + waitingGame.playerY + "px)";
-        gameScore.textContent = "점수 " + Math.floor(waitingGame.distance / 10);
+        gameScore.textContent = "점수 " + score + " · 난이도 " + (difficulty + 1);
 
         if (waitingGame.spawnIn <= 0) {
           const element = document.createElement("span");
@@ -778,27 +793,30 @@
           }
           gameStage.append(element);
           waitingGame.obstacles.push({ element, x: gameStage.clientWidth, height });
-          waitingGame.spawnIn = 1.35 + Math.random() * 0.95;
+          waitingGame.spawnIn = Math.max(1.15, 2.3 - difficulty * 0.12) + Math.random() * 0.5;
         }
 
-        const runnerLeft = gameRunner.offsetLeft;
-        const runnerRight = runnerLeft + gameRunner.offsetWidth - 5;
+        const runnerRect = gameRunner.getBoundingClientRect();
         for (let index = waitingGame.obstacles.length - 1; index >= 0; index -= 1) {
           const obstacle = waitingGame.obstacles[index];
           obstacle.x -= waitingGame.speed * delta;
           obstacle.element.style.transform = "translateX(" + obstacle.x + "px)";
-          const obstacleRight = obstacle.x + obstacle.element.offsetWidth;
-          if (obstacle.x < runnerRight && obstacleRight > runnerLeft && waitingGame.playerY < obstacle.height - 2) {
-            waitingGame.obstacles.forEach((item) => item.element.remove());
-            waitingGame.obstacles = [];
-            waitingGame.playerY = 0;
-            waitingGame.velocityY = 0;
+          const obstacleRect = obstacle.element.getBoundingClientRect();
+          const overlapsHorizontally = runnerRect.right - 5 > obstacleRect.left + 2 && runnerRect.left + 5 < obstacleRect.right - 2;
+          const overlapsVertically = runnerRect.bottom - 4 > obstacleRect.top + 2 && runnerRect.top + 4 < obstacleRect.bottom;
+          if (overlapsHorizontally && overlapsVertically) {
+            waitingGame.active = false;
+            waitingGame.gameOver = true;
             waitingGame.jumpHeld = false;
-            waitingGame.spawnIn = 1;
+            waitingGame.velocityY = 0;
             gameRunner.style.transform = "";
-            gameScore.textContent = "다시 달려요! 점수 " + Math.floor(waitingGame.distance / 10);
-            break;
+            gameJumpButton.disabled = true;
+            gamePauseButton.disabled = true;
+            gameRestartButton.hidden = false;
+            gameScore.textContent = "게임 오버 · 점수 " + score + " · 다시 시작할 수 있어요";
+            return;
           }
+          const obstacleRight = obstacle.x + obstacle.element.offsetWidth;
           if (obstacleRight < 0) {
             obstacle.element.remove();
             waitingGame.obstacles.splice(index, 1);
@@ -837,6 +855,7 @@
       if (event.detail === 0) jumpInGame();
     });
     gamePauseButton.addEventListener("click", toggleWaitingGamePause);
+    gameRestartButton.addEventListener("click", () => startWaitingGame(true));
     gameRunner.addEventListener("pointerdown", (event) => {
       if (event.button !== 0) return;
       clearDinoHold();
@@ -844,11 +863,21 @@
     });
     gameRunner.addEventListener("pointercancel", clearDinoHold);
     document.getElementById("workspace-back").addEventListener("click", () => {
-      finishWaitingGame();
+      resumeGameWhenReturning = waitingGame.active && !waitingGame.paused;
+      if (resumeGameWhenReturning) toggleWaitingGamePause();
+      gamePanel.hidden = true;
+      returnToGameButton.hidden = false;
+      document.body.classList.remove("is-waiting");
       document.body.classList.remove("is-started");
-      reportFlowStage = "idle";
-      reportGenerationPending = false;
       requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
+    });
+    returnToGameButton.addEventListener("click", () => {
+      document.body.classList.add("is-started", "is-waiting");
+      gamePanel.hidden = false;
+      returnToGameButton.hidden = true;
+      if (resumeGameWhenReturning && waitingGame.paused) toggleWaitingGamePause();
+      resumeGameWhenReturning = false;
+      requestAnimationFrame(() => document.getElementById("chat").scrollIntoView({ block: "start", behavior: "smooth" }));
     });
     gameStage.addEventListener("pointerdown", (event) => {
       if (event.target === gameJumpButton) return;
