@@ -3,46 +3,988 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AI Creative Agent</title>
+  <meta name="theme-color" content="#f5f7f8">
+  <title>AIDE — 현장 실습 보고서 도우미</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <script>
+    // 기본 디자인은 glass로 고정해 배포할 때마다 화면이 바뀌지 않게 한다.
+    (function () {
+      var G = "https://fonts.googleapis.com/css2?display=swap&family=";
+      var J = "https://cdn.jsdelivr.net/gh/";
+      var FONTS = {
+        glass: [G + "Instrument+Serif:ital@0;1"],
+        noir: [G + "Geist:wght@400;500;600&family=Geist+Mono:wght@400;500"],
+        editorial: [G + "Hahmlet:wght@300;400;600&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400"],
+        swiss: [J + "sun-typeface/SUIT@2/fonts/variable/woff2/SUIT-Variable.css", G + "Inter+Tight:wght@600;800;900&family=IBM+Plex+Mono:wght@400;500"],
+        terra: [G + "Gowun+Batang:wght@400;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400"],
+        bloom: [J + "wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css", G + "Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800"],
+        pop: [G + "Space+Grotesk:wght@500;700"],
+        luxe: [G + "Noto+Serif+KR:wght@200;300;500&family=Bodoni+Moda:ital,wght@0,400;1,400"]
+      };
+      var keys = Object.keys(FONTS);
+      var host = location.hostname;
+      var asked = new URLSearchParams(location.search).get("design");
+      var d = keys.indexOf(asked) > -1 ? asked : "glass";
+      if (!d) return;
+      document.documentElement.setAttribute("data-design", d);
+      FONTS[d].forEach(function (href) {
+        var link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = href;
+        document.head.appendChild(link);
+      });
+    })();
+  </script>
+  <style>
+    :root {
+      --page: #f3f5f6;
+      --card: #ffffff;
+      --ink: #1b2935;
+      --muted: #64727c;
+      --line: #dce3e7;
+      --accent: #3979c9;
+      --accent-soft: #e7f0fb;
+      --radius: 18px;
+      --shadow: 0 18px 55px #18344b12;
+      --font: "Pretendard Variable", Pretendard, system-ui, sans-serif;
+      --display: var(--font);
+      --grain: 0;
+      color-scheme: light;
+      font-family: var(--font);
+      color: var(--ink);
+      background: var(--page);
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { min-width: 320px; margin: 0; background: var(--page); color: var(--ink); }
+    a { color: inherit; text-decoration: none; }
+    button, input { font: inherit; }
+    button { color: inherit; }
+    .preview-note { padding: 8px 16px; background: #e7e7e7; color: #555; text-align: center; font-size: 12px; }
+    html[data-design] .preview-note { display: none; }
+    .nav { width: min(1200px, calc(100% - 48px)); min-height: 76px; margin: auto; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .logo { display: inline-flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 800; letter-spacing: -.05em; }
+    .logo-mark { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 11px; background: var(--accent); color: #fff; font-size: 13px; }
+    .nav-links { display: flex; align-items: center; gap: 28px; color: var(--muted); font-size: 13px; }
+    .nav-cta { padding: 10px 15px; border: 1px solid var(--line); border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .hero { position: relative; width: min(1200px, calc(100% - 48px)); margin: 18px auto 0; padding: clamp(36px, 6vw, 78px); overflow: hidden; border: 1px solid var(--line); border-radius: 28px; background: var(--card); }
+    .hero-inner { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, .88fr) minmax(420px, 1.12fr); align-items: center; gap: clamp(28px, 5vw, 72px); }
+    .eyebrow, .kicker { margin: 0 0 20px; color: var(--accent); font-size: 11px; font-weight: 750; letter-spacing: .16em; text-transform: uppercase; }
+    h1 { max-width: 620px; margin: 0; font-family: var(--display); font-size: clamp(46px, 6.6vw, 82px); font-weight: 800; letter-spacing: -.06em; line-height: 1.04; }
+    .hero-description { max-width: 480px; margin: 20px 0 0; color: var(--muted); font-size: 17px; line-height: 1.7; word-break: keep-all; }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; color: var(--muted); font-size: 12px; }
+    .hero-meta span { padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; }
+    .hero-copy .return-to-game { margin-top: 20px; padding: 0 16px; }
+    .deco { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+    .deco i { position: absolute; display: block; }
+    .chat-card { position: relative; z-index: 2; width: 100%; max-width: 860px; min-width: 0; margin: 0 auto; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow); }
+    .window-bar { height: 46px; display: flex; align-items: center; gap: 7px; padding: 0 16px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+    .window-dot { width: 7px; height: 7px; border-radius: 50%; background: #d0d7dc; }
+    .window-label { margin-left: 7px; }
+    .chat-card > #webchat { height: 200px; min-height: 0; }
+    body.is-started .chat-card { display: flex; flex-direction: column; }
+    body.is-started .chat-card > #webchat { flex: 1 1 0; height: auto; min-height: 0; }
+    body.is-started .hero { min-height: min(880px, calc(100vh - 100px)); }
+    body.is-started .hero-inner { min-height: 660px; }
+    body.is-started .hero-copy { display: none; }
+    body.is-started .hero-inner { grid-template-columns: minmax(0, 1fr); }
+    body.is-started .chat-card { height: min(760px, calc(100vh - 170px)); }
+    .chat-foot { padding: 12px 16px 14px; border-top: 1px solid var(--line); background: var(--card); }
+    .examples, .suggestions { display: flex; flex-wrap: wrap; gap: 7px; }
+    .examples { margin-bottom: 9px; }
+    .suggestions { margin: 9px 0; }
+    .chip { padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; transition: transform .18s ease, border-color .18s ease, background .18s ease; }
+    .chip:hover { transform: translateY(-2px); border-color: var(--accent); background: var(--accent-soft); }
+    .work-status { min-height: 17px; margin: 3px 1px 8px; color: var(--muted); font-size: 11px; }
+    .assistant-workspace { min-width: 0; }
+    .waiting-game[hidden] { display: none !important; }
+    .waiting-game { display: flex; flex-direction: column; min-width: 0; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow); }
+    .waiting-game__heading { margin: 0; font-size: 14px; font-weight: 750; }
+    .waiting-game__top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .waiting-game__hint { margin: 5px 0 12px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .waiting-game__stage { position: relative; height: 126px; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: var(--accent-soft); }
+    .waiting-game__cloud { position: absolute; top: 20%; left: 18%; width: 58px; height: 17px; border-radius: 20px; background: #fff; opacity: .8; pointer-events: none; animation: cloud-drift 12s ease-in-out infinite alternate; }
+    .waiting-game__cloud::before, .waiting-game__cloud::after { position: absolute; bottom: 5px; border-radius: 50%; background: inherit; content: ""; }
+    .waiting-game__cloud::before { left: 11px; width: 21px; height: 21px; }
+    .waiting-game__cloud::after { right: 9px; width: 16px; height: 16px; }
+    .waiting-game__cloud--far { top: 39%; left: 69%; transform: scale(.7); opacity: .48; animation-delay: -5s; }
+    .waiting-game__bird { position: absolute; top: 24%; left: 57%; width: 16px; height: 8px; pointer-events: none; animation: bird-drift 5s ease-in-out infinite alternate; }
+    .waiting-game__bird::before, .waiting-game__bird::after { position: absolute; top: 3px; width: 9px; height: 5px; border-top: 2px solid var(--muted); border-radius: 50%; content: ""; }
+    .waiting-game__bird::before { right: 7px; transform: rotate(20deg); }
+    .waiting-game__bird::after { left: 7px; transform: rotate(-20deg); }
+    .waiting-game__ground { position: absolute; right: 0; bottom: 14px; left: 0; height: 1px; background: var(--muted); opacity: .5; }
+    .waiting-game__runner { position: absolute; bottom: 15px; left: 42px; z-index: 1; font-size: 27px; line-height: 1; user-select: none; }
+    .waiting-game__runner.is-loved::after { position: absolute; bottom: 85%; left: 50%; color: #e85c83; content: "❤️"; font-size: 18px; animation: heart-pop .9s ease-out both; pointer-events: none; }
+    @keyframes cloud-drift { to { translate: 24px 0; } }
+    @keyframes bird-drift { to { translate: 18px -5px; } }
+    @keyframes heart-pop { 0% { opacity: 0; transform: translate(-50%, 8px) scale(.5); } 25% { opacity: 1; transform: translate(-50%, -2px) scale(1.15); } 100% { opacity: 0; transform: translate(-50%, -20px) scale(.9); } }
+    .waiting-game__obstacle { position: absolute; bottom: 15px; left: 0; width: 17px; background: transparent; }
+    .waiting-game__obstacle::before { position: absolute; right: 4px; bottom: 0; left: 4px; height: 100%; border-radius: 5px 5px 2px 2px; background: var(--accent); content: ""; }
+    .waiting-game__obstacle::after { position: absolute; top: 42%; left: 0; width: 7px; height: 7px; border-top: 3px solid var(--accent); border-left: 3px solid var(--accent); border-radius: 4px 0 0; content: ""; }
+    .waiting-game__obstacle.is-short { width: 16px; }
+    .waiting-game__obstacle.is-tall { width: 19px; }
+    .waiting-game__obstacle.is-double { width: 34px; }
+    .waiting-game__obstacle.is-rock::before { right: 2px; left: 2px; height: 68%; border-radius: 55% 48% 3px 3px; background: #7a8a82; }
+    .waiting-game__obstacle.is-rock::after { top: auto; right: 0; bottom: 0; left: auto; width: 11px; height: 48%; border: 0; border-radius: 50% 50% 2px 2px; background: #96a39d; }
+    .waiting-game__second { position: absolute; right: 0; bottom: 0; width: 11px; height: 62%; border-radius: 4px 4px 2px 2px; background: var(--accent); }
+    .waiting-game__score { margin: 10px 0; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+    .waiting-game__controls { display: flex; gap: 8px; margin-top: auto; }
+    .waiting-game__button { flex: 1; min-height: 38px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); font-size: 12px; font-weight: 700; cursor: pointer; }
+    .waiting-game__button--primary { border-color: var(--accent); background: var(--accent); color: #fff; }
+    .waiting-game__button:disabled { opacity: .5; cursor: not-allowed; }
+    .waiting-game__back { flex: 0 0 auto; min-height: 36px; padding: 0 12px; font-size: 11px; }
+    body.is-started .local-preview { grid-template-columns: minmax(0, 1fr); align-content: start; }
+    body.is-started .local-preview__welcome { max-width: none; }
+    body.is-started .local-preview .report-sheet { display: none; }
+    body.is-started .assistant-workspace { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; gap: 14px; height: min(760px, calc(100vh - 170px)); }
+    body.is-waiting .assistant-workspace { grid-template-columns: minmax(0, 1fr) 230px; }
+    body.is-started .chat-card { height: 100%; min-height: 0; }
+    .composer { position: relative; display: flex; align-items: center; gap: 8px; }
+    .composer input { min-width: 0; flex: 1; height: 46px; padding: 0 14px; border: 1px solid var(--line); border-radius: 12px; outline: none; background: var(--card); color: var(--ink); font-size: 13px; }
+    .composer input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent); }
+    .composer button { width: 46px; height: 46px; flex: 0 0 46px; border: 0; border-radius: 12px; background: var(--accent); color: #fff; font-size: 19px; cursor: pointer; }
+    .composer button:disabled { opacity: .45; cursor: not-allowed; }
+    .composer-hint { margin: 8px 2px 0; color: var(--muted); font-size: 10px; }
+    #status { display: none; margin: 0; padding: 10px 16px; border-top: 1px solid var(--line); background: var(--accent-soft); color: var(--ink); font-size: 12px; line-height: 1.55; }
+    #status:not(:empty) { display: block; }
+    .local-preview { height: 100%; min-height: 0; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 20px; padding: 18px 22px; overflow: auto; background: var(--card); }
+    .local-preview__welcome { max-width: 440px; }
+    .local-preview__label { display: inline-flex; margin-bottom: 9px; color: var(--accent); font-size: 10px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+    .local-preview__welcome p { margin: 0; font-size: 14px; font-weight: 650; line-height: 1.65; }
+    .local-preview__welcome small { display: block; margin-top: 6px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+    .report-sheet { width: 106px; min-height: 126px; padding: 12px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); box-shadow: var(--shadow); transform: rotate(3deg); }
+    .report-sheet__top { width: 30px; height: 4px; margin-bottom: 10px; border-radius: 4px; background: var(--accent); }
+    .report-sheet__title { margin: 0 0 10px; font-size: 8px; font-weight: 750; }
+    .report-sheet__line { height: 3px; margin: 5px 0; border-radius: 3px; background: var(--line); }
+    .report-sheet__line:nth-child(odd) { width: 78%; }
+    .report-sheet__section { margin-top: 9px; color: var(--muted); font-size: 6px; font-weight: 700; }
+    .local-preview__messages { display: grid; grid-column: 1 / -1; gap: 7px; }
+    .local-preview__user { justify-self: end; max-width: 80%; padding: 8px 11px; border: 1px solid var(--line); border-radius: 14px 4px 14px 14px; background: var(--accent-soft); font-size: 12px; overflow-wrap: anywhere; }
+    body.is-started .local-preview { align-content: start; grid-template-columns: 1fr auto; }
+    #webchat .webchat__typing-indicator { display: none !important; }
+    #webchat .webchat__stacked-layout:not(.webchat__stacked-layout--from-user) .webchat__stacked-layout__status { display: none; }
+    #webchat .webchat__stacked-layout__attachment-row { margin-top: 8px !important; }
+    #webchat .webchat__stacked-layout__attachment, #webchat .webchat__stacked-layout__attachment .webchat__bubble__content { background: none !important; border: 0 !important; overflow: visible !important; }
+    #webchat .webchat__stacked-layout__content:has(.webchat__fileContent) { overflow: visible !important; }
+    #webchat .webchat__fileContent { padding: 0 !important; }
+    #webchat .webchat__fileContent__buttonLink { display: flex !important; align-items: center; gap: 12px; height: 56px; padding: 0 18px 0 12px; border-radius: var(--radius); text-decoration: none; color: var(--ink); background: var(--card); border: 1px solid var(--line); }
+    #webchat .webchat__fileContent__buttonLink::before { content: "FILE"; flex: none; padding: 5px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font: 600 10.5px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .04em; }
+    #webchat a[download$=".pptx" i]::before { content: "PPTX"; }
+    #webchat a[download$=".docx" i]::before { content: "DOCX"; }
+    #webchat a[download$=".xlsx" i]::before { content: "XLSX"; }
+    #webchat a[download$=".html" i]::before { content: "HTML"; }
+    #webchat .webchat__fileContent__badge { flex: 1; min-width: 0; background: none !important; padding: 0 !important; }
+    #webchat .webchat__fileContent__fileName { font: 13px ui-monospace, SFMono-Regular, Menlo, monospace !important; color: var(--ink) !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #webchat .webchat__fileContent__downloadIcon { flex: none; box-sizing: content-box; width: 16px; height: 16px; padding: 0; fill: var(--muted); color: var(--muted); }
+    #webchat .webchat__render-markdown { word-break: keep-all; overflow-wrap: anywhere; }
+    #webchat .webchat__render-markdown a { color: var(--accent); }
+    #webchat .webchat__render-markdown table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; border-spacing: 0; margin: 12px 0; font-variant-numeric: tabular-nums; }
+    #webchat .webchat__render-markdown th, #webchat .webchat__render-markdown td { padding: 9px 18px 9px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    #webchat .webchat__render-markdown th { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .section { width: min(1200px, calc(100% - 48px)); margin: 0 auto; padding: clamp(80px, 11vw, 144px) 0; }
+    .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 38px; }
+    .section-heading h2 { max-width: 620px; margin: 0; font-family: var(--display); font-size: clamp(32px, 4vw, 52px); letter-spacing: -.055em; line-height: 1.1; }
+    .section-heading p { max-width: 460px; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.65; word-break: keep-all; text-wrap: pretty; }
+    .feature-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; }
+    .feature { position: relative; min-height: 260px; grid-column: span 2; padding: 22px; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); transition: transform .22s ease, box-shadow .22s ease; }
+    .feature:hover { transform: translateY(-5px); box-shadow: var(--shadow); }
+    .feature:nth-child(4), .feature:nth-child(5) { grid-column: span 3; }
+    .feature-number { color: var(--accent); font-size: 11px; font-weight: 750; letter-spacing: .12em; }
+    .feature h3 { margin: 13px 0 8px; font-size: 18px; letter-spacing: -.04em; }
+    .feature p { max-width: 340px; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
+    .mockup { position: absolute; right: 20px; bottom: 18px; display: flex; width: 125px; height: 78px; align-items: end; justify-content: center; gap: 6px; padding: 12px; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--accent-soft) 55%, var(--card)); }
+    .mockup i { display: block; width: 18px; border-radius: 4px 4px 2px 2px; background: var(--accent); opacity: .78; }
+    .mockup i:nth-child(1) { height: 25px; opacity: .35; }
+    .mockup i:nth-child(2) { height: 42px; opacity: .6; }
+    .mockup i:nth-child(3) { height: 32px; }
+    .mockup i:nth-child(4) { height: 50px; opacity: .48; }
+    .steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .step { padding: 22px 18px 26px 0; }
+    .step + .step { padding-left: 18px; border-left: 1px solid var(--line); }
+    .step b { color: var(--accent); font-size: 12px; letter-spacing: .1em; }
+    .step h3 { margin: 18px 0 8px; font-size: 16px; }
+    .step p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+    .cta { width: min(1200px, calc(100% - 48px)); margin: 0 auto 80px; padding: clamp(32px, 6vw, 72px); border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); text-align: center; }
+    .cta h2 { margin: 0; font-family: var(--display); font-size: clamp(34px, 5vw, 64px); letter-spacing: -.06em; }
+    .cta p { margin: 14px 0 24px; color: var(--muted); }
+    .cta a { display: inline-flex; padding: 12px 18px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; }
+    .footer { padding: 0 24px 24px; color: var(--muted); text-align: center; }
+    .footer-mark { display: block; margin: 0 auto 10px; overflow: hidden; color: var(--accent); font-family: var(--display); font-size: clamp(56px, 15vw, 190px); font-weight: 800; letter-spacing: -.09em; line-height: .8; white-space: nowrap; }
+    .footer small { font-size: 10px; letter-spacing: .04em; }
+
+    html[data-design="glass"] {
+      --page: #f5f5f7; --card: rgba(255,255,255,.55); --ink: #1d1d1f; --muted: #6e6e73; --line: rgba(255,255,255,.75); --accent: #6e5bff; --accent-soft: rgba(255,255,255,.55); --radius: 28px; --shadow: 0 30px 80px -30px rgba(76,70,160,.3); --font: "Pretendard Variable", Pretendard, sans-serif; --display: var(--font); --grain: .05;
+    }
+    html[data-design="glass"] body { background: #f5f5f7; }
+    html[data-design="glass"] .hero { min-height: 730px; margin-top: 12px; border-radius: 40px; background: radial-gradient(ellipse at 12% 18%, #8ea2ff77, transparent 37%), radial-gradient(ellipse at 82% 15%, #ffb3d988, transparent 34%), radial-gradient(ellipse at 78% 92%, #9be3ff99, transparent 35%), radial-gradient(ellipse at 25% 90%, #ffd3a888, transparent 33%), #f5f5f7; }
+    html[data-design="glass"] .hero-inner { grid-template-columns: 1fr; gap: 30px; text-align: center; }
+    html[data-design="glass"] .hero-copy { max-width: 760px; margin: auto; }
+    html[data-design="glass"] .hero-description { margin-right: auto; margin-left: auto; }
+    html[data-design="glass"] .eyebrow, html[data-design="glass"] .kicker { font-family: "Instrument Serif", serif; font-size: 18px; font-style: italic; letter-spacing: 0; text-transform: none; }
+    html[data-design="glass"] h1 { max-width: 900px; margin: auto; font-size: clamp(48px, 7vw, 104px); line-height: 1.02; }
+    html[data-design="glass"] h1 em { color: transparent; background: linear-gradient(120deg, #4f6bff, #8b5cf6 40%, #ec4899 70%, #ff7a45); background-clip: text; font-style: normal; }
+    html[data-design="glass"] .chat-card { backdrop-filter: blur(24px) saturate(180%); box-shadow: var(--shadow), inset 0 1px 0 #fff; }
+    html[data-design="glass"] .deco i { width: 110px; height: 110px; border-radius: 50%; background: radial-gradient(circle at 30% 25%, #fff, #8ea2ff 42%, #c4a5ff 75%); box-shadow: inset -12px -14px 22px #5148a633, 0 18px 30px #6c64aa30; animation: float 24s ease-in-out infinite; }
+    html[data-design="glass"] .deco i:nth-child(1) { top: 14%; left: 7%; }
+    html[data-design="glass"] .deco i:nth-child(2) { top: 22%; right: 8%; width: 76px; height: 76px; background: radial-gradient(circle at 30% 25%, #fff, #ffb3d9, #ffd3a8); animation-delay: -8s; }
+    html[data-design="glass"] .deco i:nth-child(3) { right: 18%; bottom: 8%; width: 54px; height: 54px; background: radial-gradient(circle at 30% 25%, #fff, #9be3ff, #8ea2ff); animation-delay: -14s; }
+    html[data-design="glass"] .feature { backdrop-filter: blur(18px); }
+    html[data-design="glass"] .footer-mark { background: linear-gradient(120deg, #4f6bff, #ec4899, #ff7a45); background-clip: text; color: transparent; }
+    @keyframes float { 50% { transform: translate3d(12px, -20px, 0) rotate(12deg); } }
+
+    html[data-design="noir"] { --page: #08090a; --card: #0e0f11; --ink: #f7f8f8; --muted: #8a8f98; --line: rgba(255,255,255,.09); --accent: #8b8cff; --accent-soft: #171824; --radius: 16px; --shadow: 0 25px 90px #6b63ff18; --font: "Pretendard Variable", Pretendard, sans-serif; --display: var(--font); }
+    html[data-design="noir"] body { background: radial-gradient(ellipse at 50% 0, #34315b44, transparent 40rem), repeating-linear-gradient(0deg, transparent 0 63px, #ffffff08 64px), repeating-linear-gradient(90deg, transparent 0 63px, #ffffff08 64px), #08090a; }
+    html[data-design="noir"] .hero { border-color: #ffffff14; background: radial-gradient(ellipse at 55% 0, #7770ff18, transparent 45%), #08090a; }
+    html[data-design="noir"] .hero-inner { grid-template-columns: 1fr; gap: 36px; text-align: center; }
+    html[data-design="noir"] .hero-copy { max-width: 850px; margin: auto; }
+    html[data-design="noir"] .hero-description { margin-right: auto; margin-left: auto; }
+    html[data-design="noir"] h1 { margin: auto; font-size: clamp(44px, 6.4vw, 92px); background: linear-gradient(#fff, #ffffff80); background-clip: text; color: transparent; }
+    html[data-design="noir"] .chat-card { border-image: linear-gradient(120deg, #8b8cffaa, #ffffff16, #3ce0b488) 1; box-shadow: 0 0 80px #6862f522; }
+    html[data-design="noir"] .window-dot { background: #3a3b45; }
+    html[data-design="noir"] .feature { background: linear-gradient(145deg, #111218, #0e0f11); }
+    html[data-design="noir"] .deco i:first-child { top: -25%; left: 35%; width: 30%; height: 55%; background: linear-gradient(#8b8cff33, transparent); filter: blur(35px); }
+    html[data-design="noir"] .footer-mark { background: linear-gradient(#fff, transparent); background-clip: text; color: transparent; }
+
+    html[data-design="editorial"] { --page: #f2eee6; --card: #f7f4ee; --ink: #161512; --muted: #6b665e; --line: #aaa49a; --accent: #23395b; --accent-soft: #e9e5dc; --radius: 2px; --shadow: none; --font: "Pretendard Variable", Pretendard, sans-serif; --display: "Hahmlet", serif; }
+    html[data-design="editorial"] .nav { min-height: 92px; border-bottom: 3px double var(--ink); }
+    html[data-design="editorial"] .logo { font-family: "Hahmlet", serif; font-size: 22px; }
+    html[data-design="editorial"] .hero { border: 0; border-radius: 0; background: transparent; }
+    html[data-design="editorial"] .hero-inner { grid-template-columns: 7fr 5fr; }
+    html[data-design="editorial"] h1 { font-size: clamp(48px, 7.4vw, 100px); font-weight: 300; line-height: 1.08; }
+    html[data-design="editorial"] .eyebrow { font-size: 12px; letter-spacing: .16em; }
+    html[data-design="editorial"] .chat-card { box-shadow: none; }
+    html[data-design="editorial"] .hero::after { position: absolute; top: 30px; right: 3%; width: 190px; height: 245px; border-radius: 100px 100px 0 0; background: radial-gradient(circle at 60% 35%, #f5d992 0 12%, transparent 13%), linear-gradient(#b8d1d0, #e6c6a0); content: ""; opacity: .55; }
+    html[data-design="editorial"] .feature { border-width: 0 0 0 1px; border-radius: 0; background: transparent; }
+    html[data-design="editorial"] .footer-mark { font-family: "Hahmlet", serif; font-weight: 300; }
+
+    html[data-design="swiss"] { --page: #f4f4f1; --card: #f4f4f1; --ink: #0b0b0b; --muted: #5e5e5a; --line: #0b0b0b; --accent: #0b0b0b; --accent-soft: #d4ff3a; --radius: 0; --shadow: none; --font: "SUIT Variable", "Pretendard Variable", sans-serif; --display: "SUIT Variable", "Pretendard Variable", sans-serif; }
+    html[data-design="swiss"] .nav { border-bottom: 1px solid var(--line); }
+    html[data-design="swiss"] .hero { border: 0; border-radius: 0; background: transparent; }
+    html[data-design="swiss"] .hero-inner { grid-template-columns: 1fr; gap: 34px; }
+    html[data-design="swiss"] h1 { max-width: 1100px; font-size: clamp(52px, 9vw, 132px); font-weight: 900; line-height: .96; }
+    html[data-design="swiss"] h1 em { padding: 0 .08em; background: #d4ff3a; font-style: normal; }
+    html[data-design="swiss"] .hero-copy { display: grid; grid-template-columns: repeat(12, 1fr); gap: 24px; }
+    html[data-design="swiss"] .hero-copy > * { grid-column: 1 / 5; }
+    html[data-design="swiss"] .hero-copy .eyebrow, html[data-design="swiss"] .hero-copy h1 { grid-column: 1 / -1; }
+    html[data-design="swiss"] .chat-card { grid-column: 6 / -1; grid-row: 1 / span 3; }
+    html[data-design="swiss"] .hero-meta span, html[data-design="swiss"] .nav-cta { border-radius: 0; }
+    html[data-design="swiss"] .feature { border-radius: 0; }
+    html[data-design="swiss"] .feature:hover { background: #d4ff3a; box-shadow: none; }
+    html[data-design="swiss"] .deco i:first-child { top: 2%; right: 3%; color: transparent; font: 900 190px/1 "Inter Tight", sans-serif; -webkit-text-stroke: 1px #0b0b0b33; }
+    html[data-design="swiss"] .deco i:first-child::before { content: "05"; }
+    html[data-design="swiss"] .footer-mark { font-family: "Inter Tight", sans-serif; }
+
+    html[data-design="terra"] { --page: #ede5d8; --card: #f7f1e7; --ink: #2a231d; --muted: #6e6257; --line: #d8c3a5; --accent: #c2603a; --accent-soft: #eee0cc; --radius: 28px; --shadow: 0 30px 60px -30px rgba(80,50,20,.28); --font: "Pretendard Variable", Pretendard, sans-serif; --display: "Gowun Batang", serif; }
+    html[data-design="terra"] .hero { border: 0; background: transparent; }
+    html[data-design="terra"] .hero-inner { grid-template-columns: .9fr 1.1fr; }
+    html[data-design="terra"] h1 { font-size: clamp(44px, 6.4vw, 88px); line-height: 1.12; }
+    html[data-design="terra"] .chat-card { box-shadow: var(--shadow); }
+    html[data-design="terra"] .deco i:first-child { top: 8%; right: 8%; width: 240px; height: 270px; border-radius: 130px 130px 10px 10px; background: #c2603a55; }
+    html[data-design="terra"] .deco i:nth-child(2) { top: 16%; right: 23%; width: 95px; height: 95px; border-radius: 50%; background: #7d7a4588; }
+    html[data-design="terra"] .deco i:nth-child(3) { top: 40%; right: 4%; width: 100px; height: 50px; border-radius: 100px 100px 0 0; background: #d9a44188; }
+    html[data-design="terra"] .feature:nth-child(odd) { background: #f7f1e7; }
+    html[data-design="terra"] .feature:nth-child(even) { background: #e7d8c2; }
+
+    html[data-design="bloom"] { --page: #fff7f2; --card: #fff; --ink: #1b1030; --muted: #6a5c7a; --line: #f0e2e8; --accent: #6b2bff; --accent-soft: #f1eaff; --radius: 28px; --shadow: 0 40px 80px -40px rgba(60,20,120,.35); --font: "Wanted Sans Variable", "Pretendard Variable", sans-serif; --display: var(--font); }
+    html[data-design="bloom"] .hero { min-height: 680px; border: 0; border-radius: 40px; background: radial-gradient(ellipse at 85% 15%, #ff8a3d, transparent 38%), radial-gradient(ellipse at 65% 78%, #ff3d7f, transparent 36%), linear-gradient(120deg, #2a0e61, #6b2bff 60%, #8d32c2); color: #fff; }
+    html[data-design="bloom"] .hero::after { position: absolute; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.14'/%3E%3C/svg%3E"); content: ""; opacity: .14; pointer-events: none; }
+    html[data-design="bloom"] .hero-inner { grid-template-columns: .95fr 1.05fr; }
+    html[data-design="bloom"] h1 { font-size: clamp(52px, 8vw, 112px); line-height: .98; }
+    html[data-design="bloom"] .hero-description { color: #ffffffc9; }
+    html[data-design="bloom"] .eyebrow { color: #ffd28b; }
+    html[data-design="bloom"] .chat-card { color: var(--ink); }
+    html[data-design="bloom"] .feature { box-shadow: 0 14px 35px #6b2bff12; }
+    html[data-design="bloom"] .footer-mark { background: linear-gradient(120deg, #6b2bff, #ff3d7f, #ff8a3d); background-clip: text; color: transparent; }
+
+    html[data-design="pop"] { --page: #f4f4f0; --card: #fff; --ink: #000; --muted: #454545; --line: #000; --accent: #000; --accent-soft: #ff90e8; --radius: 12px; --shadow: 4px 4px 0 #000; --font: "Pretendard Variable", Pretendard, sans-serif; --display: var(--font); }
+    html[data-design="pop"] .hero { border: 2px solid #000; border-radius: 12px; background: #90a8ed; }
+    html[data-design="pop"] .hero-inner { grid-template-columns: 1fr 1fr; }
+    html[data-design="pop"] h1 { font-size: clamp(48px, 7.6vw, 100px); font-weight: 900; line-height: .98; }
+    html[data-design="pop"] h1 em { padding: 0 .08em; background: #ff90e8; font-style: normal; }
+    html[data-design="pop"] .chat-card, html[data-design="pop"] .feature { border: 2px solid #000; box-shadow: 4px 4px 0 #000; }
+    html[data-design="pop"] .chat-card { transform: rotate(-1.5deg); }
+    html[data-design="pop"] .composer button { border: 2px solid #000; border-radius: 8px; background: #ffc900; color: #000; }
+    html[data-design="pop"] .composer button:active { transform: translate(4px, 4px); box-shadow: none; }
+    html[data-design="pop"] .feature:nth-child(1) { background: #ff90e8; }
+    html[data-design="pop"] .feature:nth-child(2) { background: #ffc900; }
+    html[data-design="pop"] .feature:nth-child(3) { background: #90a8ed; }
+    html[data-design="pop"] .feature:nth-child(4) { background: #b6e4cc; }
+    html[data-design="pop"] .feature:nth-child(5) { background: #fff; }
+
+    html[data-design="luxe"] { --page: #0c0b0a; --card: #141210; --ink: #ede6da; --muted: #9c9384; --line: rgba(201,169,110,.32); --accent: #c9a96e; --accent-soft: #211d16; --radius: 2px; --shadow: none; --font: "Pretendard Variable", Pretendard, sans-serif; --display: "Noto Serif KR", serif; }
+    html[data-design="luxe"] .nav { border-bottom: 1px solid var(--line); }
+    html[data-design="luxe"] .logo { letter-spacing: .22em; }
+    html[data-design="luxe"] .hero { min-height: 650px; border: 1px solid var(--line); border-radius: 2px; background: radial-gradient(ellipse at 50% 0, #c9a96e12, transparent 55%), #0c0b0a; text-align: center; }
+    html[data-design="luxe"] .hero-inner { grid-template-columns: 1fr; }
+    html[data-design="luxe"] .hero-copy { max-width: 840px; margin: auto; }
+    html[data-design="luxe"] h1 { margin: auto; font-size: clamp(44px, 6.8vw, 96px); font-weight: 300; line-height: 1.12; }
+    html[data-design="luxe"] .eyebrow { letter-spacing: .32em; }
+    html[data-design="luxe"] .hero-description { margin-right: auto; margin-left: auto; }
+    html[data-design="luxe"] .chat-card { text-align: left; }
+    html[data-design="luxe"] .chat-card, html[data-design="luxe"] .feature { border-color: var(--line); }
+    html[data-design="luxe"] .deco i { inset: 14px; border: 1px solid var(--line); }
+    html[data-design="luxe"] .deco i::before, html[data-design="luxe"] .deco i::after { position: absolute; width: 26px; height: 26px; border-color: var(--accent); content: ""; }
+    html[data-design="luxe"] .deco i::before { top: -1px; left: -1px; border-top: 2px solid; border-left: 2px solid; }
+    html[data-design="luxe"] .deco i::after { right: -1px; bottom: -1px; border-right: 2px solid; border-bottom: 2px solid; }
+    html[data-design="luxe"] .footer-mark { font-weight: 300; letter-spacing: .04em; }
+
+    html[data-design="glass"] { --page: #f3f7f7; --card: #ffffff; --ink: #203239; --muted: #647779; --line: #dce7e5; --accent: #347cba; --accent-soft: #e8f2ef; --radius: 18px; --shadow: 0 12px 36px #234d4010; --grain: 0; }
+    html[data-design="glass"] body { background: #f3f7f7; }
+    html[data-design="glass"] .hero { min-height: 0; margin-top: 12px; border: 1px solid #e1eae8; border-radius: 22px; background: #ffffff; }
+    html[data-design="glass"] .hero-inner { grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr); gap: clamp(30px, 5vw, 64px); text-align: left; }
+    html[data-design="glass"] .hero-copy { max-width: 470px; margin: 0; }
+    html[data-design="glass"] .hero-description { margin: 17px 0 0; }
+    html[data-design="glass"] .eyebrow, html[data-design="glass"] .kicker { font-family: var(--font); font-size: 11px; font-style: normal; font-weight: 700; letter-spacing: .11em; }
+    html[data-design="glass"] h1 { max-width: 620px; margin: 0; font-size: clamp(44px, 5vw, 68px); font-weight: 750; letter-spacing: -.055em; line-height: 1.14; }
+    html[data-design="glass"] h1 em { color: #31866f; background: none; font-style: normal; }
+    html[data-design="glass"] h1 em { display: inline-block; max-width: 100%; font-size: clamp(32px, .86em, 58px); white-space: nowrap; }
+    html[data-design="glass"] .hero-description { max-width: 560px; }
+    html[data-design="glass"] .hero-meta span { border-color: #e1eae8; border-radius: 8px; background: #f7faf9; }
+    html[data-design="glass"] .chat-card { border-color: #e1eae8; border-radius: 16px; background: #fff; box-shadow: 0 8px 26px #234d400c; backdrop-filter: none; }
+    html[data-design="glass"] .deco { display: none; }
+    html[data-design="glass"] .feature { border-color: #e1eae8; border-radius: 14px; background: #fff; box-shadow: none; backdrop-filter: none; }
+    html[data-design="glass"] .feature:hover { box-shadow: 0 8px 24px #234d4010; }
+    html[data-design="glass"] .mockup { border-radius: 6px; background: #f2f7f5; }
+    html[data-design="glass"] .report-sheet { border-radius: 4px; box-shadow: none; transform: none; }
+    html[data-design="glass"] .footer-mark { color: #347cba; background: none; }
+    @media (max-width: 780px) {
+      html[data-design="glass"] .hero-inner { grid-template-columns: 1fr; gap: 24px; }
+      html[data-design="glass"] .hero-copy { max-width: none; }
+    }
+    @media (max-width: 560px) {
+      html[data-design="glass"] h1 em { font-size: clamp(24px, 9.5vw, 42px); }
+    }
+    html[data-design="noir"] { --accent: #78aaff; --accent-soft: #14251f; --shadow: 0 25px 90px #227fb522; }
+    html[data-design="noir"] body { background: radial-gradient(ellipse at 50% 0, #183d5555, transparent 40rem), repeating-linear-gradient(0deg, transparent 0 63px, #ffffff08 64px), repeating-linear-gradient(90deg, transparent 0 63px, #ffffff08 64px), #08090a; }
+    html[data-design="noir"] .hero { background: radial-gradient(ellipse at 55% 0, #3777bb24, transparent 45%), #08090a; }
+    html[data-design="noir"] .chat-card { border-image: linear-gradient(120deg, #78aaffaa, #ffffff16, #3ce0b488) 1; box-shadow: 0 0 80px #287fa522; }
+    html[data-design="noir"] .deco i:first-child { background: linear-gradient(#78aaff33, #3ce0b400); }
+    html[data-design="editorial"] { --page: #eff3f2; --card: #f7f9f7; --line: #9eaaa5; --accent: #285d67; --accent-soft: #e1ece8; }
+    html[data-design="editorial"] .hero::after { background: radial-gradient(circle at 60% 35%, #d8e8c1 0 12%, transparent 13%), linear-gradient(#a9cfda, #d5e5d5); }
+    html[data-design="swiss"] { --page: #f1f5f3; --card: #f1f5f3; --muted: #52635f; --line: #17211d; --accent: #225caa; --accent-soft: #ccebdc; }
+    html[data-design="swiss"] h1 em, html[data-design="swiss"] .feature:hover { background: #ccebdc; }
+    html[data-design="terra"] { --page: #e6efeb; --card: #f4f7f1; --muted: #5e706a; --line: #bfd1c8; --accent: #287c70; --accent-soft: #dcece5; --shadow: 0 30px 60px -30px rgba(35,85,75,.25); }
+    html[data-design="terra"] .deco i:first-child { background: #498da577; }
+    html[data-design="terra"] .deco i:nth-child(2) { background: #75a98299; }
+    html[data-design="terra"] .deco i:nth-child(3) { background: #b6d790aa; }
+    html[data-design="terra"] .feature:nth-child(even) { background: #dbe8df; }
+    html[data-design="bloom"] { --page: #f2f7fa; --ink: #12243a; --muted: #526a7c; --line: #dce9ec; --accent: #2875c7; --accent-soft: #e1f1ec; --shadow: 0 40px 80px -40px rgba(28,92,128,.32); }
+    html[data-design="bloom"] .hero { background: radial-gradient(ellipse at 85% 15%, #54cbb0, transparent 38%), radial-gradient(ellipse at 65% 78%, #318bc9, transparent 40%), linear-gradient(120deg, #103d69, #176f9d 58%, #20876f); }
+    html[data-design="bloom"] .eyebrow { color: #b8f1d8; }
+    html[data-design="bloom"] .feature { box-shadow: 0 14px 35px #2875c71c; }
+    html[data-design="bloom"] .footer-mark { background-image: linear-gradient(120deg, #2875c7, #23a58e, #73bb83); }
+    html[data-design="pop"] { --page: #f1f5f1; --muted: #394b46; --accent-soft: #b9e8d0; }
+    html[data-design="pop"] .hero { background: #87b9e8; }
+    html[data-design="pop"] h1 em { background: #a8e7c2; }
+    html[data-design="pop"] .composer button { background: #a8e7c2; }
+    html[data-design="pop"] .feature:nth-child(1) { background: #a8e7c2; }
+    html[data-design="pop"] .feature:nth-child(2) { background: #c3ddf4; }
+    html[data-design="pop"] .feature:nth-child(3) { background: #87b9e8; }
+    html[data-design="pop"] .feature:nth-child(4) { background: #b9e8d0; }
+    html[data-design="luxe"] { --accent: #8bc6b1; --accent-soft: #192722; --line: rgba(139,198,177,.32); }
+    html[data-design="luxe"] .hero { background: radial-gradient(ellipse at 50% 0, #65bfae18, transparent 55%), #0c0b0a; }
+
+    @media (max-width: 780px) {
+      .nav, .hero, .section, .cta { width: min(100% - 28px, 600px); }
+      .nav { min-height: 64px; }
+      .nav-links { display: none; }
+      .hero { margin-top: 10px; padding: 28px 20px; }
+      .hero-inner, html[data-design="glass"] .hero-inner, html[data-design="editorial"] .hero-inner, html[data-design="terra"] .hero-inner, html[data-design="bloom"] .hero-inner, html[data-design="pop"] .hero-inner { grid-template-columns: 1fr; gap: 24px; }
+      .hero-copy { text-align: left; }
+      h1 { font-size: clamp(42px, 12vw, 64px); }
+      .hero-description { font-size: 15px; }
+      .chat-card { border-radius: 16px; }
+      body.is-waiting .assistant-workspace { grid-template-columns: minmax(0, 1fr) minmax(150px, .7fr); gap: 8px; height: min(600px, calc(100vh - 150px)); }
+      .waiting-game { padding: 10px; }
+      .waiting-game__runner { left: 24px; }
+      .chat-foot { padding: 10px; }
+      .examples, .suggestions { gap: 6px; }
+      .chip { font-size: 10px; }
+      .section { padding: 76px 0; }
+      .section-heading { display: block; }
+      .section-heading p { margin-top: 12px; }
+      .feature-grid { grid-template-columns: 1fr; }
+      .feature, .feature:nth-child(n) { grid-column: auto; min-height: 220px; }
+      .steps { grid-template-columns: 1fr 1fr; }
+      .step:nth-child(3) { border-left: 0; padding-left: 0; }
+      html[data-design="swiss"] .hero-copy { display: block; }
+      html[data-design="swiss"] .chat-card { grid-column: auto; grid-row: auto; }
+      html[data-design="editorial"] .hero::after { right: 5%; width: 95px; height: 130px; }
+      html[data-design="pop"] .chat-card { transform: none; }
+      html[data-design="noir"] body { background-size: 64px 64px; }
+      body.is-started .hero { min-height: min(820px, calc(100vh - 72px)); }
+      body.is-started .hero-inner { min-height: 650px; }
+      body.is-started .chat-card { height: 100%; min-height: 0; }
+    }
+    @media (max-width: 560px) {
+      body.is-waiting .assistant-workspace { grid-template-columns: 1fr; height: auto; }
+      body.is-started .chat-card { min-height: 320px; height: min(520px, 65vh); }
+      .waiting-game { min-height: 250px; }
+    }
+    @media (min-width: 781px) {
+      body.is-waiting { height: 100dvh; overflow: hidden; }
+      body.is-waiting .nav, body.is-waiting .footer, body.is-waiting #features, body.is-waiting #how, body.is-waiting #about { display: none; }
+      body.is-waiting main { height: 100dvh; }
+      body.is-waiting .hero { width: 100%; height: 100dvh; min-height: 0; margin: 0; padding: 0; border: 0; border-radius: 0; }
+      body.is-waiting .hero-inner { display: block; width: 100%; height: 100%; min-height: 0; }
+      body.is-waiting .assistant-workspace { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; width: 100%; height: 100dvh; }
+      body.is-waiting .chat-card { max-width: none; height: 100%; margin: 0; border-radius: 0; box-shadow: none; }
+      body.is-waiting .waiting-game { height: 100%; min-height: 0; padding: clamp(24px, 4vw, 64px); border-top: 0; border-right: 0; border-bottom: 0; border-left: 1px solid var(--line); border-radius: 0; box-shadow: none; }
+      body.is-waiting .waiting-game__heading { font-size: clamp(22px, 2vw, 32px); }
+      body.is-waiting .waiting-game__back { min-height: 42px; font-size: 13px; }
+      body.is-waiting .waiting-game__hint { margin: 10px 0 20px; font-size: 15px; }
+      body.is-waiting .waiting-game__stage { flex: 1; height: auto; min-height: 0; border-radius: 16px; }
+      body.is-waiting .waiting-game__runner { left: clamp(48px, 8vw, 120px); font-size: 42px; }
+      body.is-waiting .waiting-game__ground { bottom: 20px; }
+      body.is-waiting .waiting-game__obstacle { bottom: 21px; width: 22px; }
+      body.is-waiting .waiting-game__score { margin: 16px 0; font-size: 14px; }
+      body.is-waiting .waiting-game__button { min-height: 52px; font-size: 15px; }
+      body.is-waiting .chat-foot { padding: 18px 22px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+      .waiting-game__runner.is-loved::after { animation: none; opacity: 1; transform: translateX(-50%); }
+    }
+  </style>
 </head>
 <body>
-  <p id="status" role="status" aria-live="polite">채팅에 연결하는 중입니다...</p>
-  <div id="webchat" style="height: 600px"></div>
+  <div class="preview-note">🎁 진짜 디자인은 내 github.io 주소에서 열려요</div>
+  <nav class="nav" aria-label="메인 메뉴">
+    <a class="logo" href="#" aria-label="AIDE 홈"><span class="logo-mark">A</span><span data-copy="brand">AIDE</span></a>
+    <div class="nav-links"><a href="#features">도움 내용</a><a href="#how">사용 방법</a><a href="#about">AIDE 소개</a></div>
+    <a class="nav-cta" href="#chat" data-copy="navCta">보고서 작성하기 ↗</a>
+  </nav>
+
+  <main>
+    <section class="hero" id="chat">
+      <div class="deco" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="hero-inner">
+        <div class="hero-copy">
+          <p class="eyebrow" data-copy="eyebrow">YOUR FIELD PRACTICE REPORT AIDE</p>
+          <h1 data-copy="title">현장의 기록을,<br><em>보고서의 완성으로.</em></h1>
+          <p class="hero-description" data-copy="description">실습 중 적어 둔 메모를 입력해 주세요. AIDE가 핵심 내용을 정리해 현장 실습 보고서 초안 작성을 도와드려요.</p>
+          <div class="hero-meta"><span data-copy="metaOne">01 실습 메모 입력</span><span data-copy="metaTwo">02 함께 다듬고 완성</span></div>
+          <button class="waiting-game__button waiting-game__button--primary return-to-game" id="return-to-game" type="button" hidden>게임 화면으로 돌아가기</button>
+        </div>
+        <div class="assistant-workspace">
+          <section class="chat-card" aria-label="AIDE 현장 실습 보고서 대화창">
+            <div class="window-bar"><i class="window-dot"></i><i class="window-dot"></i><i class="window-dot"></i><span class="window-label" data-copy="chatTitle">AIDE 현장 실습 보고서 도우미</span></div>
+            <div id="webchat" aria-label="대화 내용"></div>
+            <div class="chat-foot">
+              <div class="examples" aria-label="예시 요청"><button class="chip" type="button" data-example-index="0">오늘 실습 메모 정리하기</button><button class="chip" type="button" data-example-index="1">기억에 남는 경험 기록하기</button><button class="chip" type="button" data-example-index="2">보고서 문장 다듬기</button></div>
+              <p class="work-status" id="work-status" aria-live="polite">실습 내용을 적거나 예시를 골라 시작해 보세요.</p>
+              <div class="suggestions" aria-label="빠른 요청"><button class="chip" type="button" data-prompt="오늘 실습에서 한 업무를 보고서 초안으로 정리해줘">보고서 초안 정리 →</button><button class="chip" type="button" data-prompt="이 메모를 자연스러운 문장으로 다듬어줘">문장 다듬기 →</button><button class="chip" type="button" data-prompt="실습 내용을 항목별로 정리해줘">항목별 정리 →</button></div>
+              <form class="composer" id="composer"><input id="message" type="text" autocomplete="off" placeholder="오늘의 실습 내용을 편하게 적어주세요..." aria-label="메시지 입력" data-copy-placeholder="placeholder" disabled><button id="send" type="submit" aria-label="메시지 보내기" disabled>↑</button></form>
+              <p class="composer-hint" data-copy="hint">메모를 바탕으로 초안을 만들고, 대화로 내용을 다듬을 수 있어요.</p>
+            </div>
+            <p id="status" role="status" aria-live="polite"></p>
+          </section>
+          <aside class="waiting-game" id="waiting-game" aria-label="보고서 작성 대기 게임" hidden>
+            <div class="waiting-game__top">
+              <h2 class="waiting-game__heading">잠깐, 게임 한 판!</h2>
+              <button class="waiting-game__button waiting-game__back" id="workspace-back" type="button">← 메인으로</button>
+            </div>
+            <p class="waiting-game__hint">짧게 누르면 낮게, 길게 누르면 높이 점프해요. 스페이스바나 ↑ 키도 사용할 수 있어요.</p>
+            <div class="waiting-game__stage" id="waiting-game-stage" aria-label="장애물 달리기 게임">
+              <div class="waiting-game__ground"></div>
+              <span class="waiting-game__cloud" aria-hidden="true"></span>
+              <span class="waiting-game__cloud waiting-game__cloud--far" aria-hidden="true"></span>
+              <span class="waiting-game__bird" aria-hidden="true"></span>
+              <span class="waiting-game__runner" id="waiting-game-runner" aria-hidden="true">🦖</span>
+            </div>
+            <p class="waiting-game__score" id="waiting-game-score">점수 0</p>
+            <div class="waiting-game__controls">
+              <button class="waiting-game__button waiting-game__button--primary" id="waiting-game-jump" type="button">점프</button>
+              <button class="waiting-game__button" id="waiting-game-pause" type="button" aria-pressed="false">일시정지</button>
+              <button class="waiting-game__button" id="waiting-game-restart" type="button" hidden>다시 시작</button>
+            </div>
+          </aside>
+          </div>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="section-heading"><div><p class="kicker" data-copy="featureKicker">AIDE가 도와드리는 일</p><h2 data-copy="featureTitle">실습의 메모를 보고서로 정리해요.</h2></div><p data-copy="featureDescription">작성해 둔 내용을 바탕으로 실습 경험을 읽기 쉬운 보고서 초안으로 정리하도록 도와드려요.</p></div>
+      <div class="feature-grid">
+        <article class="feature"><span class="feature-number">(01)</span><h3 data-copy="feature1Title">실습 메모 정리</h3><p data-copy="feature1Text">현장에서 적은 메모와 업무 내용을 정돈된 기록으로 정리해요.</p><div class="mockup" aria-hidden="true"><i></i><i></i><i></i><i></i></div></article>
+        <article class="feature"><span class="feature-number">(02)</span><h3 data-copy="feature2Title">경험 구체화</h3><p data-copy="feature2Text">기억에 남는 경험과 배운 점을 보고서에 담을 수 있도록 도와요.</p><div class="mockup" aria-hidden="true"><i></i><i></i><i></i><i></i></div></article>
+        <article class="feature"><span class="feature-number">(03)</span><h3 data-copy="feature3Title">보고서 초안 작성</h3><p data-copy="feature3Text">입력한 내용을 바탕으로 현장 실습 보고서 초안 작성을 도와요.</p><div class="mockup" aria-hidden="true"><i></i><i></i><i></i><i></i></div></article>
+        <article class="feature"><span class="feature-number">(04)</span><h3 data-copy="feature4Title">읽기 쉬운 문장</h3><p data-copy="feature4Text">메모를 자연스럽게 다듬고 내용의 흐름을 정리해요.</p><div class="mockup" aria-hidden="true"><i></i><i></i><i></i><i></i></div></article>
+        <article class="feature"><span class="feature-number">(05)</span><h3 data-copy="feature5Title">대화로 수정</h3><p data-copy="feature5Text">초안을 확인한 뒤 필요한 내용을 이어서 요청할 수 있어요.</p><div class="mockup" aria-hidden="true"><i></i><i></i><i></i><i></i></div></article>
+      </div>
+    </section>
+
+    <section class="section" id="how">
+      <div class="section-heading"><div><p class="kicker" data-copy="howKicker">사용 방법</p><h2 data-copy="howTitle">메모를 남기고, 함께 완성해요.</h2></div><p data-copy="howDescription">실습 내용을 입력한 뒤 AIDE와 대화하며 보고서 초안을 다듬어 보세요.</p></div>
+      <div class="steps">
+        <article class="step"><b>01 — 기록</b><h3 data-copy="step1Title">실습 메모를 입력하고</h3><p data-copy="step1Text">업무와 경험을 편한 말로 적어주세요.</p></article>
+        <article class="step"><b>02 — 정리</b><h3 data-copy="step2Title">핵심 내용을 정돈하고</h3><p data-copy="step2Text">메모에 담긴 실습 내용을 읽기 쉽게 정리해요.</p></article>
+        <article class="step"><b>03 — 작성</b><h3 data-copy="step3Title">보고서 초안을 만들고</h3><p data-copy="step3Text">정리한 기록을 바탕으로 초안 작성을 도와드려요.</p></article>
+        <article class="step"><b>04 — 완성</b><h3 data-copy="step4Title">대화로 함께 다듬어요</h3><p data-copy="step4Text">빠진 내용이나 수정할 점을 말해주면 이어서 도와요.</p></article>
+      </div>
+    </section>
+
+    <section class="cta" id="about"><p class="kicker" data-copy="ctaKicker">AIDE 현장 실습 보고서 도우미</p><h2 data-copy="ctaTitle">오늘의 실습을 기록해 보세요.</h2><p data-copy="ctaText">메모를 남기면 AIDE가 보고서 작성을 도와드려요.</p><a href="#chat" data-copy="ctaButton">보고서 시작하기 →</a></section>
+  </main>
+  <footer class="footer"><span class="footer-mark" data-copy="footerMark">AIDE</span><small><span data-copy="footerLine">AIDE · 현장 실습 보고서 도우미 · © 2026</span> · 해보조</small></footer>
+
   <script src="https://cdn.botframework.com/botframework-webchat/4.18.0/webchat.js"></script>
   <script>
     const BROKER_URL = "https://dl-broker-juwon-4jt3z.azurewebsites.net/api/directlineToken";
     const SEALED = "lNR_5OFLtOLry8SXvNSMIk5GDuMr8aDZzq44b0x5VSEFxYsgXuC6hJa7Dhc1MS0UYygxDdb-UiFCUu0V3WnbBZZ6wuD5CvzgJQs0UnjPwcLenthessoGY7M1GT7EdKSoZblJmjfPQ9zzh2KLYlHrZGgqmETxs8SH_esiDtv3XSqsgh7uKuTTCYWcN8ZpQhPIQdVBn9X2ofg3AJRo5Ucz-njZq2mnHeVoJ62-jEMbg4Was3oOVQy5MZpm3_Z3_QuvIEjojhmphuZP_lgfnYIS8ueiJiQsCqpfBsYRmyxNqE3xiOLIcEM-9mp68NgXsjYmobVSzIe1eQh7D24CNvcMMW0MbLCEH8_TBpveE24Bzj1nxnZRz-AwMQ9WmK6DLT5p5PLNZvexaXYXkm2B0xkOIIhegCiqjNjKOgrgCr8SH-K2dTEv6URvU2ZYvYq2jrXSybvuc2UTQcJUxpL7QvkCwE1AnxzcHFVgKZ99H68aGuXb7YHqRaBfAxVZErYredIn7LGMpHXYHTtlmoTSrQuO2EsxJihnA98ESvoL1i0gFewTkghe9_-Qf7TMFM9IwUJ-spsa-zxSm9p4ngMUb390hJX5DQLfQPIr6TGyrHIEIB_5lj9SqaZxckGUfJUjYeApMZ41e3c4894qgJ9y";
     const status = document.getElementById("status");
-
-    function showError(message) {
-      status.hidden = false;
-      status.textContent = message;
+    const messageInput = document.getElementById("message");
+    const sendButton = document.getElementById("send");
+    const workStatus = document.getElementById("work-status");
+    const selectedDesign = document.documentElement.getAttribute("data-design");
+    const COPY = {
+      glass: { brand: "AIDE", navCta: "보고서 작성하기 ↗", eyebrow: "현장 실습 보고서 작성", title: "오늘의 실습을<br><em>차분히 정리해요.</em>", description: "실습 중 맡았던 업무와 기억에 남은 일을 적어주세요. 보고서 초안을 함께 정리해볼게요.", featureKicker: "AIDE가 도와드려요", featureTitle: "실습 내용을 보고서로 정리해요.", featureDescription: "짧은 메모에서 시작해 읽기 쉬운 실습 보고서 초안으로 다듬어 보세요.", howKicker: "사용 방법", howTitle: "기록에서 보고서까지.", howDescription: "편하게 적고, 필요한 부분을 대화로 고쳐가면 돼요.", step1Title: "경험을 적고", step1Text: "현장에서 한 업무와 기억에 남은 일을 입력해요.", step2Title: "핵심을 정리하고", step2Text: "메모에 담긴 주요 내용을 읽기 쉽게 정돈해요.", step3Title: "초안을 만들고", step3Text: "정리한 기록을 바탕으로 보고서 작성을 도와요.", step4Title: "함께 다듬어요", step4Text: "원하는 표현과 빠진 내용을 대화로 보완해요.", ctaKicker: "오늘의 기록", ctaTitle: "실습 내용을 기록해 보세요.", ctaText: "AIDE와 함께 보고서 초안을 정리해요.", ctaButton: "기록 시작하기 →", footerMark: "AIDE", chatTitle: "현장 실습 보고서", placeholder: "오늘 맡았던 업무나 기억에 남는 일을 적어주세요...", hint: "작성된 초안은 실제 실습 경험과 맞는지 확인해 주세요." },
+      noir: { brand: "AIDE", navCta: "시작하기 →", eyebrow: "FIELD PRACTICE / REPORT AIDE", title: "실습 기록.<br><em>보고서 완성.</em>", description: "현장 메모를 입력하세요. AIDE가 보고서 초안 작성을 돕습니다.", featureKicker: "FROM NOTES TO REPORT", featureTitle: "기록을 정리하고, 초안으로.", featureDescription: "필요한 내용에 집중해 대화로 빠르게 다듬어 보세요.", howKicker: "WORKFLOW", howTitle: "메모에서 제출 전 검토까지.", howDescription: "실습 내용을 입력하고 AIDE와 대화를 이어가세요.", step1Title: "메모 입력", step1Text: "실습 중 한 업무와 경험을 적으세요.", step2Title: "내용 정리", step2Text: "핵심을 읽기 쉽게 구조화합니다.", step3Title: "초안 작성", step3Text: "보고서 초안 작성을 지원합니다.", step4Title: "함께 수정", step4Text: "필요한 부분을 대화로 다듬습니다.", ctaKicker: "AIDE / READY", ctaTitle: "실습 기록을 시작하세요.", ctaText: "AIDE가 보고서 작성을 돕습니다.", ctaButton: "AIDE 열기 ↗", footerMark: "AIDE", chatTitle: "AIDE / REPORT AIDE", placeholder: "실습 메모 입력...", hint: "초안을 확인한 뒤 필요한 내용을 이어서 요청하세요." },
+      editorial: { brand: "AIDE · 현장 기록", navCta: "기록 시작 →", eyebrow: "FIELD NOTES — AIDE", title: "오늘의 경험을,<br><em>한 편의 보고서로.</em>", description: "Editor’s note — 현장에서 마주한 일과 배움을 메모로 남겨주세요. AIDE가 그 기록을 보고서 초안으로 정리하도록 돕습니다.", featureKicker: "NOTES, GATHERED WITH CARE", featureTitle: "실습의 순간을 기록으로 남기기.", featureDescription: "업무 내용부터 배운 점까지, 기록의 흐름을 차분히 정리합니다.", howKicker: "CONTENTS — 작성 순서", howTitle: "기록이 보고서가 되는 과정.", howDescription: "한 단계씩 대화로 내용을 더하고 정돈해요.", step1Title: "현장을 기록하고", step1Text: "오늘 맡은 업무와 기억에 남은 일을 적습니다.", step2Title: "배운 점을 모으고", step2Text: "경험에서 얻은 생각을 함께 정리합니다.", step3Title: "초안을 구성하고", step3Text: "기록을 바탕으로 보고서 작성을 지원합니다.", step4Title: "문장을 고칩니다", step4Text: "표현과 내용을 확인하며 다듬습니다.", ctaKicker: "A NOTE TO BEGIN", ctaTitle: "오늘의 기록을 남겨주세요.", ctaText: "AIDE와 함께 실습 보고서를 정리해요.", ctaButton: "첫 문장 쓰기 →", footerMark: "AIDE", chatTitle: "AIDE — 현장 실습 기록", placeholder: "오늘 기억하고 싶은 실습 경험은 무엇인가요?", hint: "사실에 맞게 내용을 확인하고 필요한 부분을 수정해 주세요." },
+      swiss: { brand: "AIDE / REPORT", navCta: "시작 →", eyebrow: "(01) FIELD PRACTICE AIDE", title: "FIELD NOTES.<br><em>REPORT READY.</em>", description: "실습 기록 입력. 핵심 내용 정리. 보고서 초안 작성 지원.", featureKicker: "(02) WHAT AIDE DOES", featureTitle: "기록에서 보고서 초안까지.", featureDescription: "내 메모를 바탕으로 내용을 구조화하고 문장을 다듬습니다.", howKicker: "(03) PROCESS", howTitle: "네 단계. 하나의 기록.", howDescription: "업무와 배움을 기록하고, 대화로 필요한 내용을 완성하세요.", step1Title: "입력", step1Text: "실습 중 한 일을 적습니다.", step2Title: "정리", step2Text: "기록의 핵심을 묶습니다.", step3Title: "초안", step3Text: "보고서 작성을 지원합니다.", step4Title: "검토", step4Text: "내용을 확인하고 수정합니다.", ctaKicker: "(04) START HERE", ctaTitle: "실습 기록을 시작.", ctaText: "AIDE가 초안 작성을 돕습니다.", ctaButton: "기록하기 →", footerMark: "AIDE", chatTitle: "AIDE / FIELD REPORT", placeholder: "실습 내용 입력...", hint: "정확한 경험을 바탕으로 초안을 검토하세요." },
+      terra: { brand: "AIDE · 현장 기록", navCta: "함께 작성하기 ↗", eyebrow: "A LITTLE HELP FOR YOUR FIELD NOTES", title: "현장의 하루를,<br><em>따뜻한 기록으로.</em>", description: "실습 중 있었던 일을 편한 말로 들려주세요. AIDE가 기억과 배움을 차근차근 보고서로 정리하도록 도와요.", featureKicker: "AIDE가 곁에서 돕는 일", featureTitle: "경험을 천천히, 또렷하게.", featureDescription: "짧은 메모도 괜찮아요. 중요한 순간을 함께 정리해요.", howKicker: "하나씩 차근차근", howTitle: "기록에서 초안까지 함께해요.", howDescription: "급하게 쓰지 않아도 괜찮아요. 대화로 내용을 채워가요.", step1Title: "오늘 일을 떠올리고", step1Text: "실습 중 있었던 일을 편하게 적어주세요.", step2Title: "배움을 정리하고", step2Text: "기억에 남는 점과 느낀 점을 모아요.", step3Title: "초안을 만들고", step3Text: "보고서의 흐름을 함께 잡아가요.", step4Title: "마지막까지 다듬어요", step4Text: "원하는 표현으로 하나씩 고쳐요.", ctaKicker: "TAKE YOUR TIME", ctaTitle: "오늘의 실습을 들려주세요.", ctaText: "AIDE가 보고서 작성을 도와드릴게요.", ctaButton: "이야기 시작하기 →", footerMark: "AIDE", chatTitle: "AIDE 현장 기록방", placeholder: "오늘 실습에서 기억에 남은 일을 적어주세요...", hint: "편하게 대화하며 초안을 함께 완성해요." },
+      bloom: { brand: "AIDE!", navCta: "시작해 보기 ↗", eyebrow: "YOUR FIELD NOTES, MADE CLEAR", title: "실습의 하루를<br><em>보고서로 펼쳐봐!</em>", description: "오늘 있었던 일을 적어봐요. AIDE가 메모를 모아 보고서 초안으로 정리하는 걸 도와줄게요.", featureKicker: "MEET YOUR REPORT AIDE", featureTitle: "메모가 보고서가 되는 순간!", featureDescription: "업무 기록부터 배운 점까지, 읽기 좋게 함께 정리해요.", howKicker: "HERE’S THE FLOW", howTitle: "적고, 정리하고, 다듬으면 끝!", howDescription: "어려운 문장부터 쓰지 않아도 괜찮아요. 메모부터 시작해요.", step1Title: "있었던 일을 적고", step1Text: "실습 중 한 일을 편하게 입력해요.", step2Title: "중요한 점을 모으고", step2Text: "기억과 배움을 함께 정리해요.", step3Title: "초안을 만들고", step3Text: "보고서의 첫 버전을 준비해요.", step4Title: "내 말로 다듬어요", step4Text: "원하는 방향을 말하고 내용을 고쳐요.", ctaKicker: "LET’S GET YOUR NOTES DOWN", ctaTitle: "오늘 기록, 지금 시작!", ctaText: "AIDE가 옆에서 보고서 작성을 도와요.", ctaButton: "메모 남기기 →", footerMark: "AIDE!", chatTitle: "AIDE REPORT BUDDY", placeholder: "오늘 실습에서 뭐 했는지 적어봐요!", hint: "초안은 확인하고 내 경험에 맞게 꼭 다듬어 주세요." },
+      pop: { brand: "AIDE!", navCta: "기록하러 가기 →", eyebrow: "실습 기록 도우미 등장!", title: "오늘 실습,<br><em>보고서로 딱 정리!</em>", description: "메모만 적어도 괜찮아! AIDE가 실습 보고서 초안 작성을 도와줄게.", featureKicker: "(01) AIDE가 해주는 것", featureTitle: "메모부터 보고서까지, 같이 가자!", featureDescription: "오늘 있었던 일을 적고 하나씩 정리해 봐요.", howKicker: "(02) 사용 방법", howTitle: "네 단계면 준비 끝!", howDescription: "편하게 쓰고, 대화하면서 고치면 돼요.", step1Title: "메모 남기기", step1Text: "무슨 일이 있었는지 편하게 적기!", step2Title: "핵심 찾기", step2Text: "중요한 내용과 배운 점 정리!", step3Title: "초안 만들기", step3Text: "보고서 작성 시작하기!", step4Title: "같이 수정하기", step4Text: "마음에 들 때까지 다듬기!", ctaKicker: "자, 시작해볼까?", ctaTitle: "오늘 실습은 어땠어?", ctaText: "AIDE한테 들려주면 보고서로 정리해 줄게!", ctaButton: "말해주기 →", footerMark: "AIDE!", chatTitle: "AIDE 기록 친구", placeholder: "오늘 실습에서 있었던 일은?", hint: "AI 초안은 실제 경험에 맞게 꼭 확인해 주세요!" },
+      luxe: { brand: "A I D E", navCta: "기록 시작 ↗", eyebrow: "AIDE · FIELD PRACTICE REPORT", title: "현장의 경험을,<br><em>정돈된 기록으로.</em>", description: "실습 중의 업무와 배움을 남겨주세요. AIDE가 현장 실습 보고서 초안 작성을 세심하게 돕습니다.", featureKicker: "AIDE REPORT ASSISTANCE", featureTitle: "기록의 핵심을 정제합니다.", featureDescription: "현장에서 얻은 경험을 읽기 쉬운 보고서로 정리하도록 돕습니다.", howKicker: "A CONSIDERED PROCESS", howTitle: "기록을 검토하고 완성하기까지.", howDescription: "초안은 시작점입니다. 대화를 통해 정확한 내용으로 조율하세요.", step1Title: "기록을 남기고", step1Text: "실습 업무와 경험을 입력합니다.", step2Title: "내용을 정돈하고", step2Text: "핵심과 배움을 구조화합니다.", step3Title: "초안을 준비하고", step3Text: "보고서 작성을 지원합니다.", step4Title: "정확히 검토합니다", step4Text: "경험에 맞게 내용을 보완합니다.", ctaKicker: "A QUIET PLACE TO BEGIN", ctaTitle: "오늘의 경험을 기록하세요.", ctaText: "AIDE가 보고서 작성을 함께합니다.", ctaButton: "기록 남기기 →", footerMark: "A I D E", chatTitle: "AIDE · FIELD REPORT", placeholder: "정리하고 싶은 현장 실습 내용을 입력해 주세요...", hint: "완성 전 초안의 내용이 실제 경험과 일치하는지 확인해 주세요." }
+    };
+    const EXAMPLES = {
+      glass: ["오늘 실습에서 한 업무를 정리해줘", "기억에 남는 경험을 보고서로 써줘", "작성한 보고서 문장을 다듬어줘"],
+      noir: ["오늘 맡은 업무 보고서 초안", "실습 중 배운 점 정리", "보고서 문장 간결하게 수정"],
+      editorial: ["오늘의 실습을 기록하고 싶어요", "기억에 남는 경험과 배움을 정리해줘", "보고서 문장을 자연스럽게 다듬어줘"],
+      swiss: ["오늘의 실습 업무 정리.", "배운 점 기록.", "보고서 문장 수정."],
+      terra: ["오늘 실습에서 했던 일을 정리해줘", "기억에 남는 순간을 기록하고 싶어", "보고서를 조금 더 자연스럽게 다듬어줘"],
+      bloom: ["오늘 실습 메모를 보고서로 정리해줘!", "오늘 배운 점도 같이 적어줘", "이 문장 자연스럽게 바꿔줘!"],
+      pop: ["오늘 한 일 보고서로 정리해줘!", "실습에서 배운 점도 써줘", "문장 좀 깔끔하게 바꿔줘!"],
+      luxe: ["오늘의 현장 업무를 보고서 초안으로 정리해 주세요", "실습에서 얻은 배움을 정돈해 주세요", "보고서의 문장을 다듬어 주세요"]
+    };
+    const defaultExamples = ["오늘 실습에서 한 업무를 정리해줘", "실습 중 기억에 남는 경험을 보고서로 써줘", "작성한 보고서 문장을 다듬어줘"];
+    document.querySelectorAll("[data-example-index]").forEach((button) => {
+      const index = Number(button.getAttribute("data-example-index"));
+      const prompt = selectedDesign && EXAMPLES[selectedDesign] ? EXAMPLES[selectedDesign][index] : defaultExamples[index];
+      button.textContent = prompt;
+      button.setAttribute("data-prompt", prompt);
+    });
+    if (selectedDesign && COPY[selectedDesign]) {
+      document.querySelectorAll("[data-copy]").forEach((element) => {
+        const key = element.getAttribute("data-copy");
+        if (COPY[selectedDesign][key]) element.innerHTML = COPY[selectedDesign][key];
+      });
+      const placeholder = document.querySelector("[data-copy-placeholder]");
+      if (placeholder) placeholder.placeholder = COPY[selectedDesign].placeholder;
+    }
+    if (selectedDesign === "glass") {
+      const description = document.querySelector('[data-copy="description"]');
+      description.innerHTML = COPY.glass.description.replace("적어주세요. ", "적어주세요.<br>");
     }
 
+    let directLine;
+    let localPreview = false;
+    let waitingForReport = false;
+    let reportFlowStage = "idle";
+    let reportGenerationPending = false;
+    let reportTypingTimer = 0;
+    const waitingGame = {
+      active: false,
+      frame: 0,
+      lastTime: 0,
+      elapsed: 0,
+      distance: 0,
+      speed: 250,
+      playerY: 0,
+      velocityY: 0,
+      jumpHeld: false,
+      jumpHoldRemaining: 0,
+      paused: false,
+      gameOver: false,
+      update: null,
+      spawnIn: 1.1,
+      obstacles: []
+    };
+    const gamePanel = document.getElementById("waiting-game");
+    const gameStage = document.getElementById("waiting-game-stage");
+    const gameRunner = document.getElementById("waiting-game-runner");
+    const gameScore = document.getElementById("waiting-game-score");
+    const gameHint = document.querySelector(".waiting-game__hint");
+    const gameJumpButton = document.getElementById("waiting-game-jump");
+    const gamePauseButton = document.getElementById("waiting-game-pause");
+    const gameRestartButton = document.getElementById("waiting-game-restart");
+    const returnToGameButton = document.getElementById("return-to-game");
+    let dinoHoldTimer = 0;
+    let dinoHeartTimer = 0;
+    let resumeGameWhenReturning = false;
+
+    function jumpInGame() {
+      if (!waitingGame.active || waitingGame.paused || waitingGame.playerY > 0) return;
+      waitingGame.velocityY = 420;
+      waitingGame.jumpHoldRemaining = 0.22;
+    }
+
+    function holdJump() {
+      if (!waitingGame.active || waitingGame.paused) return;
+      waitingGame.jumpHeld = true;
+      if (waitingGame.playerY === 0) jumpInGame();
+    }
+
+    function releaseJump() {
+      waitingGame.jumpHeld = false;
+    }
+
+    function clearDinoHold() {
+      window.clearTimeout(dinoHoldTimer);
+      dinoHoldTimer = 0;
+    }
+
+    function showDinoHeart() {
+      clearDinoHold();
+      gameRunner.classList.add("is-loved");
+      window.clearTimeout(dinoHeartTimer);
+      dinoHeartTimer = window.setTimeout(() => {
+        gameRunner.classList.remove("is-loved");
+        dinoHeartTimer = 0;
+      }, 900);
+    }
+
+    function finishWaitingGame() {
+      window.clearTimeout(reportTypingTimer);
+      reportTypingTimer = 0;
+      waitingGame.active = false;
+      cancelAnimationFrame(waitingGame.frame);
+      waitingGame.obstacles.forEach((obstacle) => obstacle.element.remove());
+      waitingGame.obstacles = [];
+      waitingGame.playerY = 0;
+      waitingGame.velocityY = 0;
+      waitingGame.jumpHeld = false;
+      waitingGame.jumpHoldRemaining = 0;
+      waitingGame.paused = false;
+      gameRunner.style.transform = "";
+      gamePanel.hidden = true;
+      waitingForReport = false;
+      document.body.classList.remove("is-waiting");
+      gamePauseButton.textContent = "일시정지";
+      gamePauseButton.setAttribute("aria-pressed", "false");
+    }
+
+    function isInformationCollectionPrompt(text) {
+      return /개인\s*정보.{0,24}(?:원하시나요|동의|작성|입력|알려|받아도|괜찮|필요)|(?:업무|실습)\s*메모|메모.{0,16}(?:입력|작성|남겨|알려|보내|적어|말해)|(?:오늘|실습).{0,20}(?:무슨|어떤|맡은|하신).{0,12}(?:업무|일|실습)|업무.{0,16}(?:하셨|했|수행|담당)/i.test(text);
+    }
+
+    function isReportGenerationNotice(text) {
+      if (/[?？]/.test(text)) return false;
+      return /보고서.{0,24}(?:작성|생성|만들).{0,20}(?:시작|중|할게|하겠|해\s*드릴|해\s*볼|진행|드릴게|드리겠)|(?:작성|생성|만들).{0,16}보고서.{0,20}(?:시작|중|할게|하겠|해\s*드릴|해\s*볼|진행|드릴게|드리겠)|초안.{0,16}(?:작성|생성|만들).{0,20}(?:시작|중|할게|하겠|해\s*드릴|해\s*볼|진행|드릴게|드리겠)/i.test(text);
+    }
+
+    function handleBotActivity(activity) {
+      if (!activity || !activity.from || activity.from.role === "user") return;
+      if (activity.type === "typing") {
+        if (reportGenerationPending && !reportTypingTimer) {
+          reportTypingTimer = window.setTimeout(() => {
+            reportTypingTimer = 0;
+            if (!reportGenerationPending) return;
+            reportGenerationPending = false;
+            reportFlowStage = "generating";
+            startWaitingGame();
+            setWorking("AIDE가 보고서를 작성하고 있어요...");
+          }, 700);
+        }
+        return;
+      }
+      if (activity.type !== "message") return;
+
+      const text = typeof activity.text === "string" ? activity.text : "";
+      if (isInformationCollectionPrompt(text)) {
+        window.clearTimeout(reportTypingTimer);
+        reportTypingTimer = 0;
+        reportGenerationPending = false;
+        reportFlowStage = /개인\s*정보/i.test(text) ? "awaiting_privacy" : "awaiting_memo";
+        setWorking("AIDE가 보고서에 필요한 내용을 확인하고 있어요.");
+        return;
+      }
+      if (reportGenerationPending && isReportGenerationNotice(text)) {
+        reportGenerationPending = false;
+        reportFlowStage = "generating";
+        startWaitingGame();
+        setWorking("AIDE가 보고서를 작성하고 있어요...");
+        return;
+      }
+      if (reportFlowStage === "generating" && waitingForReport) {
+        reportFlowStage = "complete";
+        setWorking("답변이 도착했어요. 더 필요한 내용을 요청해 보세요.");
+        return;
+      }
+      if (reportGenerationPending && /[?？]|(?:알려|입력|작성|선택)해\s*주세요|원하시나요|어떠신가요/.test(text)) {
+        window.clearTimeout(reportTypingTimer);
+        reportTypingTimer = 0;
+        reportGenerationPending = false;
+        reportFlowStage = "awaiting_followup";
+        setWorking("AIDE가 보고서에 필요한 내용을 확인하고 있어요.");
+      }
+    }
+
+    function startWaitingGame(restart = false) {
+      if (!restart && (waitingGame.active || waitingGame.paused || waitingGame.gameOver)) {
+        waitingForReport = true;
+        return;
+      }
+      cancelAnimationFrame(waitingGame.frame);
+      waitingGame.obstacles.forEach((obstacle) => obstacle.element.remove());
+      waitingGame.obstacles = [];
+      waitingGame.active = true;
+      waitingGame.lastTime = 0;
+      waitingGame.elapsed = 0;
+      waitingGame.distance = 0;
+      waitingGame.speed = 250;
+      waitingGame.playerY = 0;
+      waitingGame.velocityY = 0;
+      waitingGame.jumpHeld = false;
+      waitingGame.jumpHoldRemaining = 0;
+      waitingGame.paused = false;
+      waitingGame.gameOver = false;
+      waitingGame.spawnIn = 2;
+      waitingForReport = true;
+      document.body.classList.add("is-waiting");
+      gameHint.textContent = localPreview
+        ? "화면 미리보기용 게임이에요. 짧게 누르면 낮게, 길게 누르면 높이 뛰어요."
+        : "보고서를 기다리는 동안 장애물을 피해 보세요. 짧게 누르면 낮게, 길게 누르면 높이 뛰어요.";
+      gameRunner.style.transform = "";
+      gameScore.textContent = "점수 0 · 난이도 1";
+      gameJumpButton.disabled = false;
+      gamePauseButton.disabled = false;
+      gameRestartButton.hidden = true;
+      gamePauseButton.textContent = "일시정지";
+      gamePauseButton.setAttribute("aria-pressed", "false");
+      gamePanel.hidden = false;
+
+      function updateGame(time) {
+        if (!waitingGame.active || waitingGame.paused) return;
+        const delta = waitingGame.lastTime ? Math.min((time - waitingGame.lastTime) / 1000, 0.05) : 0;
+        waitingGame.lastTime = time;
+        waitingGame.elapsed += delta;
+        waitingGame.distance += waitingGame.speed * delta;
+        const score = Math.floor(waitingGame.distance / 10);
+        const difficulty = Math.min(8, Math.floor(score / 100));
+        waitingGame.speed = Math.min(390, 250 + difficulty * 18);
+        waitingGame.spawnIn -= delta;
+        const holdLift = waitingGame.jumpHeld && waitingGame.jumpHoldRemaining > 0 ? 1300 : 0;
+        waitingGame.jumpHoldRemaining = Math.max(0, waitingGame.jumpHoldRemaining - delta);
+        waitingGame.velocityY -= (1550 - holdLift) * delta;
+        waitingGame.playerY = Math.max(0, waitingGame.playerY + waitingGame.velocityY * delta);
+        if (waitingGame.playerY === 0) waitingGame.velocityY = 0;
+        gameRunner.style.transform = "translateY(-" + waitingGame.playerY + "px)";
+        gameScore.textContent = "점수 " + score + " · 난이도 " + (difficulty + 1);
+
+        if (waitingGame.spawnIn <= 0) {
+          const element = document.createElement("span");
+          const roll = Math.random();
+          const kind = roll < 0.28 ? "is-short" : roll < 0.55 ? "is-tall" : roll < 0.78 ? "is-double" : "is-rock";
+          const height = kind === "is-short" ? 22 + Math.floor(Math.random() * 8)
+            : kind === "is-tall" ? 42 + Math.floor(Math.random() * 15)
+            : kind === "is-rock" ? 24 + Math.floor(Math.random() * 10)
+            : 30 + Math.floor(Math.random() * 13);
+          element.className = "waiting-game__obstacle " + kind;
+          element.style.height = height + "px";
+          if (kind === "is-double") {
+            const second = document.createElement("span");
+            second.className = "waiting-game__second";
+            element.append(second);
+          }
+          gameStage.append(element);
+          waitingGame.obstacles.push({ element, x: gameStage.clientWidth, height });
+          waitingGame.spawnIn = Math.max(1.15, 2.3 - difficulty * 0.12) + Math.random() * 0.5;
+        }
+
+        const runnerRect = gameRunner.getBoundingClientRect();
+        for (let index = waitingGame.obstacles.length - 1; index >= 0; index -= 1) {
+          const obstacle = waitingGame.obstacles[index];
+          obstacle.x -= waitingGame.speed * delta;
+          obstacle.element.style.transform = "translateX(" + obstacle.x + "px)";
+          const obstacleRect = obstacle.element.getBoundingClientRect();
+          const overlapsHorizontally = runnerRect.right - 5 > obstacleRect.left + 2 && runnerRect.left + 5 < obstacleRect.right - 2;
+          const overlapsVertically = runnerRect.bottom - 4 > obstacleRect.top + 2 && runnerRect.top + 4 < obstacleRect.bottom;
+          if (overlapsHorizontally && overlapsVertically) {
+            waitingGame.active = false;
+            waitingGame.gameOver = true;
+            waitingGame.jumpHeld = false;
+            waitingGame.velocityY = 0;
+            gameRunner.style.transform = "";
+            gameJumpButton.disabled = true;
+            gamePauseButton.disabled = true;
+            gameRestartButton.hidden = false;
+            gameScore.textContent = "게임 오버 · 점수 " + score + " · 다시 시작할 수 있어요";
+            return;
+          }
+          const obstacleRight = obstacle.x + obstacle.element.offsetWidth;
+          if (obstacleRight < 0) {
+            obstacle.element.remove();
+            waitingGame.obstacles.splice(index, 1);
+          }
+        }
+        waitingGame.frame = requestAnimationFrame(updateGame);
+      }
+
+      waitingGame.update = updateGame;
+      waitingGame.frame = requestAnimationFrame(updateGame);
+    }
+
+    function toggleWaitingGamePause() {
+      if (!waitingGame.active) return;
+      waitingGame.paused = !waitingGame.paused;
+      gamePauseButton.textContent = waitingGame.paused ? "계속하기" : "일시정지";
+      gamePauseButton.setAttribute("aria-pressed", String(waitingGame.paused));
+      if (waitingGame.paused) {
+        cancelAnimationFrame(waitingGame.frame);
+        waitingGame.frame = 0;
+        return;
+      }
+      waitingGame.lastTime = 0;
+      waitingGame.frame = requestAnimationFrame(waitingGame.update);
+    }
+
+    gameJumpButton.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      gameJumpButton.setPointerCapture(event.pointerId);
+      holdJump();
+    });
+    gameJumpButton.addEventListener("pointerup", releaseJump);
+    gameJumpButton.addEventListener("pointercancel", releaseJump);
+    gameJumpButton.addEventListener("lostpointercapture", releaseJump);
+    gameJumpButton.addEventListener("click", (event) => {
+      if (event.detail === 0) jumpInGame();
+    });
+    gamePauseButton.addEventListener("click", toggleWaitingGamePause);
+    gameRestartButton.addEventListener("click", () => startWaitingGame(true));
+    gameRunner.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) return;
+      clearDinoHold();
+      dinoHoldTimer = window.setTimeout(showDinoHeart, 320);
+    });
+    gameRunner.addEventListener("pointercancel", clearDinoHold);
+    document.getElementById("workspace-back").addEventListener("click", () => {
+      resumeGameWhenReturning = waitingGame.active && !waitingGame.paused;
+      if (resumeGameWhenReturning) toggleWaitingGamePause();
+      gamePanel.hidden = true;
+      returnToGameButton.hidden = false;
+      document.body.classList.remove("is-waiting");
+      document.body.classList.remove("is-started");
+      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
+    });
+    returnToGameButton.addEventListener("click", () => {
+      document.body.classList.add("is-started", "is-waiting");
+      gamePanel.hidden = false;
+      returnToGameButton.hidden = true;
+      if (resumeGameWhenReturning && waitingGame.paused) toggleWaitingGamePause();
+      resumeGameWhenReturning = false;
+      requestAnimationFrame(() => document.getElementById("chat").scrollIntoView({ block: "start", behavior: "smooth" }));
+    });
+    gameStage.addEventListener("pointerdown", (event) => {
+      if (event.target === gameJumpButton) return;
+      gameStage.setPointerCapture(event.pointerId);
+      holdJump();
+    });
+    gameStage.addEventListener("pointerup", () => {
+      clearDinoHold();
+      releaseJump();
+    });
+    gameStage.addEventListener("pointercancel", () => {
+      clearDinoHold();
+      releaseJump();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (!gamePanel.hidden && document.activeElement !== gamePauseButton &&
+          (event.code === "Space" || event.code === "ArrowUp") &&
+          !["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) {
+        event.preventDefault();
+        if (!event.repeat) holdJump();
+      }
+    });
+    document.addEventListener("keyup", (event) => {
+      if (event.code === "Space" || event.code === "ArrowUp") releaseJump();
+    });
+
+    function showError(text) {
+      status.textContent = text;
+      workStatus.textContent = text;
+    }
+    function setWorking(text) {
+      workStatus.textContent = text;
+    }
+    function sendMessage(text) {
+      const content = text.trim();
+      if (!content) return;
+      if (localPreview) {
+        const messages = document.getElementById("local-preview-messages");
+        const previewMessage = document.createElement("div");
+        previewMessage.className = "local-preview__user";
+        previewMessage.textContent = content;
+        messages.append(previewMessage);
+        document.body.classList.add("is-started");
+        if (/보고서.{0,12}(?:작성|만들|생성).{0,8}(?:시작|해줘|해주세요)|초안.{0,8}(?:작성|만들).{0,8}(?:시작|해줘|해주세요)/i.test(content)) {
+          reportFlowStage = "generating";
+          startWaitingGame();
+          setWorking("디자인 미리보기 · 보고서 작성 중을 가정하고 게임을 표시하고 있어요.");
+        } else if (isInformationCollectionPrompt(content)) {
+          reportFlowStage = /개인\s*정보/i.test(content) ? "awaiting_privacy" : "awaiting_memo";
+          setWorking("디자인 미리보기 · 정보 확인 단계에서는 게임을 표시하지 않아요.");
+        } else {
+          setWorking("디자인 미리보기 · 보고서 작성을 시작하면 게임이 표시돼요.");
+        }
+        messageInput.value = "";
+        requestAnimationFrame(() => document.getElementById("chat").scrollIntoView({ block: "start", behavior: "smooth" }));
+        return;
+      }
+      if (!directLine) return;
+      document.body.classList.add("is-started");
+      requestAnimationFrame(() => document.getElementById("chat").scrollIntoView({ block: "start", behavior: "smooth" }));
+      if (reportFlowStage === "awaiting_privacy" || reportFlowStage === "awaiting_memo" || reportFlowStage === "awaiting_followup") {
+        reportGenerationPending = true;
+        reportFlowStage = "awaiting_generation";
+        setWorking("내용을 확인했어요. 보고서 작성이 시작되면 게임이 나타나요.");
+      } else {
+        setWorking("AIDE가 필요한 내용을 확인하고 있어요...");
+      }
+      directLine.postActivity({ type: "message", text: content, from: { id: "user" } }).subscribe({
+        error: () => showError("메시지를 보내지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.")
+      });
+      messageInput.value = "";
+    }
+    document.getElementById("composer").addEventListener("submit", (event) => {
+      event.preventDefault();
+      sendMessage(messageInput.value);
+    });
+    document.querySelectorAll("[data-prompt]").forEach((button) => {
+      button.addEventListener("click", () => sendMessage(button.getAttribute("data-prompt")));
+    });
+
     async function connect() {
-      if (!window.WebChat ||
-          typeof WebChat.createDirectLine !== "function" ||
-          typeof WebChat.renderWebChat !== "function") {
+      if (["localhost", "127.0.0.1"].includes(location.hostname)) {
+        localPreview = true;
+        messageInput.disabled = false;
+        sendButton.disabled = false;
+        setWorking("디자인 미리보기 · 입력한 메시지는 화면에만 표시됩니다.");
+        const demo = document.createElement("div");
+        demo.className = "local-preview";
+        demo.innerHTML = '<div class="local-preview__welcome"><span class="local-preview__label">AIDE · 화면 미리보기</span><p>안녕하세요! 현장 실습 보고서 작성을 돕는 AIDE입니다.</p><small>아래 보고서는 디자인 확인용 빈 예시예요. 실제 채팅은 공개된 AIDE 페이지에서 연결됩니다.</small></div><div class="report-sheet" aria-hidden="true"><div class="report-sheet__top"></div><p class="report-sheet__title">현장 실습 보고서</p><div class="report-sheet__section">실습 내용</div><div class="report-sheet__line"></div><div class="report-sheet__line"></div><div class="report-sheet__section">배운 점</div><div class="report-sheet__line"></div><div class="report-sheet__line"></div></div><div class="local-preview__messages" id="local-preview-messages"></div>';
+        document.getElementById("webchat").replaceChildren(demo);
+        return;
+      }
+      if (!window.WebChat || typeof WebChat.createDirectLine !== "function" || typeof WebChat.renderWebChat !== "function") {
         showError("채팅 구성 요소를 불러오지 못했습니다. 네트워크를 확인한 뒤 새로고침해 주세요.");
         return;
       }
-
       let response;
       try {
-        // Keep this a simple CORS request; the broker may not support preflight.
-        response = await fetch(BROKER_URL, {
-          method: "POST",
-          body: JSON.stringify({ sealed: SEALED })
-        });
+        response = await fetch(BROKER_URL, { method: "POST", body: JSON.stringify({ sealed: SEALED }) });
       } catch {
-        showError("서버에 연결하지 못했습니다. 네트워크와 배포 주소를 확인해 주세요.");
+        showError("서버에 연결하지 못했습니다. GitHub Pages 주소와 네트워크를 확인해 주세요.");
         return;
       }
       if (!response.ok) {
-        showError("서버가 연결 요청을 처리하지 못했습니다 (HTTP " + response.status + ").");
+        showError("채팅 연결이 거부되었습니다 (HTTP " + response.status + "). 배포 주소가 허용된 페이지인지 확인해 주세요.");
         return;
       }
-
       let data;
       try {
         data = await response.json();
@@ -51,24 +993,54 @@
         return;
       }
       if (!data || typeof data.token !== "string" || !data.token.trim()) {
-        showError("서버에서 연결 토큰을 받지 못했습니다. 암호와 배포 주소를 확인해 주세요.");
+        showError("서버에서 연결 토큰을 받지 못했습니다. 잠시 후 다시 시도해 주세요.");
         return;
       }
-
       try {
-        const directLine = WebChat.createDirectLine({ token: data.token });
-        status.hidden = true;
-        directLine.postActivity({
-          type: "event", name: "startConversation", from: { id: "user" }
-        }).subscribe({
-          error: () => showError("첫 인사를 요청하지 못했습니다. 채팅창에 메시지를 입력해 주세요.")
+        directLine = WebChat.createDirectLine({ token: data.token });
+        const store = WebChat.createStore({}, () => next => action => {
+          const result = next(action);
+          if (action.type === "DIRECT_LINE/CONNECT_FULFILLED") {
+            messageInput.disabled = false;
+            sendButton.disabled = false;
+            setWorking("연결됐어요. 아이디어를 들려주세요.");
+          }
+          if (action.type === "DIRECT_LINE/INCOMING_ACTIVITY") {
+            const activity = action.payload && action.payload.activity;
+            handleBotActivity(activity);
+          }
+          return result;
         });
-        WebChat.renderWebChat({ directLine, locale: "ko-KR" }, document.getElementById("webchat"));
+        directLine.postActivity({ type: "event", name: "startConversation", from: { id: "user" } }).subscribe({
+          error: () => setWorking("첫 인사를 요청하지 못했어요. 메시지를 입력해 대화를 시작해 주세요.")
+        });
+        const css = getComputedStyle(document.documentElement);
+        WebChat.renderWebChat({
+          directLine,
+          store,
+          locale: "ko-KR",
+          styleOptions: {
+            backgroundColor: "transparent",
+            primaryFont: css.getPropertyValue("--font").trim(),
+            bubbleBackground: css.getPropertyValue("--card").trim(),
+            bubbleBorderColor: css.getPropertyValue("--line").trim(),
+            bubbleBorderRadius: 16,
+            bubbleFromUserBackground: css.getPropertyValue("--accent-soft").trim(),
+            bubbleFromUserBorderColor: css.getPropertyValue("--line").trim(),
+            bubbleFromUserBorderRadius: 16,
+            bubbleTextColor: css.getPropertyValue("--ink").trim(),
+            bubbleFromUserTextColor: css.getPropertyValue("--ink").trim(),
+            sendBoxBackground: css.getPropertyValue("--card").trim(),
+            hideSendBox: true,
+            hideUploadButton: true,
+            paddingRegular: 16,
+            paddingWide: 24
+          }
+        }, document.getElementById("webchat"));
       } catch {
-        showError("채팅을 시작하지 못했습니다. 새로고침 후 다시 시도해 주세요.");
+        showError("채팅을 시작하지 못했어요. 새로고침 후 다시 시도해 주세요.");
       }
     }
-
     connect();
   </script>
 </body>
