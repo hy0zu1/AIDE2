@@ -99,8 +99,6 @@
     .suggestions { margin: 9px 0; }
     .chip { padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; transition: transform .18s ease, border-color .18s ease, background .18s ease; }
     .chip:hover { transform: translateY(-2px); border-color: var(--accent); background: var(--accent-soft); }
-    .privacy-choices:not([hidden]) { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin: 9px 0; }
-    .privacy-choices__label { color: var(--muted); font-size: 11px; }
     .work-status { min-height: 17px; margin: 3px 1px 8px; color: var(--muted); font-size: 11px; }
     .assistant-workspace { min-width: 0; }
     .waiting-game[hidden] { display: none !important; }
@@ -479,11 +477,6 @@
             <div class="chat-foot">
               <div class="examples" aria-label="예시 요청"><button class="chip" type="button" data-example-index="0">오늘 실습 메모 정리하기</button><button class="chip" type="button" data-example-index="1">기억에 남는 경험 기록하기</button><button class="chip" type="button" data-example-index="2">보고서 문장 다듬기</button></div>
               <p class="work-status" id="work-status" aria-live="polite">실습 내용을 적거나 예시를 골라 시작해 보세요.</p>
-              <div class="privacy-choices" id="privacy-choices" role="group" aria-label="개인정보 작성 여부" hidden>
-                <span class="privacy-choices__label">개인정보를 작성하시겠어요?</span>
-                <button class="chip" type="button" data-privacy-choice="예">예</button>
-                <button class="chip" type="button" data-privacy-choice="아니요">아니요</button>
-              </div>
               <div class="suggestions" aria-label="빠른 요청"><button class="chip" type="button" data-prompt="오늘 실습에서 한 업무를 보고서 초안으로 정리해줘">보고서 초안 정리 →</button><button class="chip" type="button" data-prompt="이 메모를 자연스러운 문장으로 다듬어줘">문장 다듬기 →</button><button class="chip" type="button" data-prompt="실습 내용을 항목별로 정리해줘">항목별 정리 →</button></div>
               <form class="composer" id="composer"><input id="message" type="text" autocomplete="off" placeholder="오늘의 실습 내용을 편하게 적어주세요..." aria-label="메시지 입력" data-copy-placeholder="placeholder" disabled><button id="send" type="submit" aria-label="메시지 보내기" disabled>↑</button></form>
               <p class="composer-hint" data-copy="hint">메모를 바탕으로 초안을 만들고, 대화로 내용을 다듬을 수 있어요.</p>
@@ -595,7 +588,7 @@
     let reportGenerationPending = false;
     let reportTypingTimer = 0;
     let privacyPromptVersion = 0;
-    const privacyChoices = document.getElementById("privacy-choices");
+    let privacyChoicePending = false;
     const waitingGame = {
       active: false,
       frame: 0,
@@ -685,6 +678,37 @@
       return /개인\s*정보[\s\S]{0,80}(?:원하시나요|원하십니까|원하세요|하시겠(?:어요|습니까|나요)|할까요|동의하시나요)/i.test(text);
     }
 
+    function privacyChoiceActivity(activity) {
+      const lines = activity.text.split(/\r?\n/);
+      let foundQuestion = false;
+      const remainingLines = lines.filter((line) => {
+        if (isPrivacyChoicePrompt(line)) {
+          foundQuestion = true;
+          return false;
+        }
+        if (foundQuestion && /^\s*(?:\d+[.)]\s*)?(?:\*\*)?(?:네|예|아니요)(?:\*\*)?\s*[:：→-]/.test(line)) return false;
+        if (foundQuestion && /(?:네|예).{0,15}아니요|아니요.{0,15}(?:네|예)/.test(line) && /(?:답|선택)/.test(line)) return false;
+        return true;
+      });
+      return {
+        ...activity,
+        text: foundQuestion ? remainingLines.join("\n").trim() : activity.text,
+        attachments: [
+          ...(activity.attachments || []),
+          {
+            contentType: "application/vnd.microsoft.card.hero",
+            content: {
+              title: "개인정보를 작성하시겠어요?",
+              buttons: [
+                { type: "imBack", title: "예", value: "aide-privacy:" + privacyPromptVersion + ":yes" },
+                { type: "imBack", title: "아니요", value: "aide-privacy:" + privacyPromptVersion + ":no" }
+              ]
+            }
+          }
+        ]
+      };
+    }
+
     function isReportGenerationNotice(text) {
       if (/[?？]/.test(text)) return false;
       return /보고서.{0,24}(?:작성|생성|만들).{0,20}(?:시작|중|할게|하겠|해\s*드릴|해\s*볼|진행|드릴게|드리겠)|(?:작성|생성|만들).{0,16}보고서.{0,20}(?:시작|중|할게|하겠|해\s*드릴|해\s*볼|진행|드릴게|드리겠)|초안.{0,16}(?:작성|생성|만들).{0,20}(?:시작|중|할게|하겠|해\s*드릴|해\s*볼|진행|드릴게|드리겠)/i.test(text);
@@ -708,9 +732,9 @@
       if (activity.type !== "message") return;
 
       const text = typeof activity.text === "string" ? activity.text : "";
-      privacyPromptVersion += 1;
-      privacyChoices.hidden = !isPrivacyChoicePrompt(text);
-      if (!privacyChoices.hidden) {
+      if (isPrivacyChoicePrompt(text)) {
+        privacyPromptVersion += 1;
+        privacyChoicePending = true;
         window.clearTimeout(reportTypingTimer);
         reportTypingTimer = 0;
         reportGenerationPending = false;
@@ -718,6 +742,7 @@
         setWorking("개인정보 작성 여부를 선택해 주세요.");
         return;
       }
+      if (privacyChoicePending) return;
       if (isInformationCollectionPrompt(text)) {
         window.clearTimeout(reportTypingTimer);
         reportTypingTimer = 0;
@@ -940,7 +965,7 @@
       const content = text.trim();
       if (!content) return;
       if (localPreview) {
-        privacyChoices.hidden = true;
+        privacyChoicePending = false;
         const messages = document.getElementById("local-preview-messages");
         const previewMessage = document.createElement("div");
         previewMessage.className = "local-preview__user";
@@ -962,9 +987,9 @@
         return;
       }
       if (!directLine) return;
-      const wasPrivacyChoice = !privacyChoices.hidden;
+      const wasPrivacyChoice = privacyChoicePending;
       const promptVersion = privacyPromptVersion;
-      privacyChoices.hidden = true;
+      privacyChoicePending = false;
       document.body.classList.add("is-started");
       requestAnimationFrame(() => document.getElementById("chat").scrollIntoView({ block: "start", behavior: "smooth" }));
       if (reportFlowStage === "awaiting_privacy" || reportFlowStage === "awaiting_privacy_details") {
@@ -982,7 +1007,7 @@
       directLine.postActivity({ type: "message", text: content, from: { id: "user" } }).subscribe({
         error: () => {
           if (wasPrivacyChoice && privacyPromptVersion === promptVersion) {
-            privacyChoices.hidden = false;
+            privacyChoicePending = true;
             reportFlowStage = "awaiting_privacy";
           }
           showError("메시지를 보내지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.");
@@ -997,10 +1022,6 @@
     document.querySelectorAll("[data-prompt]").forEach((button) => {
       button.addEventListener("click", () => sendMessage(button.getAttribute("data-prompt")));
     });
-    document.querySelectorAll("[data-privacy-choice]").forEach((button) => {
-      button.addEventListener("click", () => sendMessage(button.getAttribute("data-privacy-choice"), true));
-    });
-
     async function connect() {
       if (["localhost", "127.0.0.1"].includes(location.hostname)) {
         localPreview = true;
@@ -1042,15 +1063,19 @@
       try {
         directLine = WebChat.createDirectLine({ token: data.token });
         const store = WebChat.createStore({}, () => next => action => {
+          if (action.type === "DIRECT_LINE/INCOMING_ACTIVITY") {
+            const activity = action.payload && action.payload.activity;
+            handleBotActivity(activity);
+            if (activity && activity.type === "message" && activity.from && activity.from.role !== "user" &&
+                typeof activity.text === "string" && isPrivacyChoicePrompt(activity.text)) {
+              action = { ...action, payload: { ...action.payload, activity: privacyChoiceActivity(activity) } };
+            }
+          }
           const result = next(action);
           if (action.type === "DIRECT_LINE/CONNECT_FULFILLED") {
             messageInput.disabled = false;
             sendButton.disabled = false;
             setWorking("연결됐어요. 아이디어를 들려주세요.");
-          }
-          if (action.type === "DIRECT_LINE/INCOMING_ACTIVITY") {
-            const activity = action.payload && action.payload.activity;
-            handleBotActivity(activity);
           }
           return result;
         });
@@ -1062,6 +1087,16 @@
           directLine,
           store,
           locale: "ko-KR",
+          cardActionMiddleware: () => next => args => {
+            const value = args.cardAction && args.cardAction.value;
+            const match = typeof value === "string" && /^aide-privacy:(\d+):(yes|no)$/.exec(value);
+            if (!match) return next(args);
+            if (!privacyChoicePending || Number(match[1]) !== privacyPromptVersion) {
+              setWorking("이미 선택한 질문이에요. 현재 대화를 계속해 주세요.");
+              return;
+            }
+            sendMessage(match[2] === "yes" ? "네" : "아니요", true);
+          },
           styleOptions: {
             backgroundColor: "transparent",
             primaryFont: css.getPropertyValue("--font").trim(),
