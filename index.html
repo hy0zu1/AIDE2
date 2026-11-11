@@ -476,6 +476,7 @@
               <div class="suggestions" aria-label="빠른 요청"><button class="chip" type="button" data-prompt="오늘 실습에서 한 업무를 보고서 초안으로 정리해줘">보고서 초안 정리 →</button><button class="chip" type="button" data-prompt="이 메모를 자연스러운 문장으로 다듬어줘">문장 다듬기 →</button><button class="chip" type="button" data-prompt="실습 내용을 항목별로 정리해줘">항목별 정리 →</button></div>
               <form class="composer" id="composer"><input id="message" type="text" autocomplete="off" placeholder="오늘의 실습 내용을 편하게 적어주세요..." aria-label="메시지 입력" data-copy-placeholder="placeholder" disabled><button id="send" type="submit" aria-label="메시지 보내기" disabled>↑</button></form>
               <p class="composer-hint" data-copy="hint">메모를 바탕으로 초안을 만들고, 대화로 내용을 다듬을 수 있어요.</p>
+              <p class="composer-hint">새로고침하거나 페이지를 떠나면 대화 내용이 초기화돼요.</p>
             </div>
             <p id="status" role="status" aria-live="polite"></p>
           </section>
@@ -494,8 +495,9 @@
             </div>
             <p class="waiting-game__score" id="waiting-game-score">점수 0</p>
             <div class="waiting-game__controls">
-              <button class="waiting-game__button waiting-game__button--primary" id="waiting-game-jump" type="button">점프</button>
-              <button class="waiting-game__button" id="waiting-game-pause" type="button" aria-pressed="false">일시정지</button>
+              <button class="waiting-game__button waiting-game__button--primary" id="waiting-game-start" type="button">게임 시작</button>
+              <button class="waiting-game__button waiting-game__button--primary" id="waiting-game-jump" type="button" hidden disabled>점프</button>
+              <button class="waiting-game__button" id="waiting-game-pause" type="button" aria-pressed="false" hidden disabled>일시정지</button>
               <button class="waiting-game__button" id="waiting-game-restart" type="button" hidden>다시 시작</button>
             </div>
           </aside>
@@ -585,6 +587,9 @@
     let reportTypingTimer = 0;
     let privacyPromptVersion = 0;
     let privacyChoicePending = false;
+    let privacyDecisionMade = false;
+    let hasUserMessage = false;
+    let unloadWarningEnabled = false;
     const waitingGame = {
       active: false,
       frame: 0,
@@ -607,6 +612,7 @@
     const gameRunner = document.getElementById("waiting-game-runner");
     const gameScore = document.getElementById("waiting-game-score");
     const gameHint = document.querySelector(".waiting-game__hint");
+    const gameStartButton = document.getElementById("waiting-game-start");
     const gameJumpButton = document.getElementById("waiting-game-jump");
     const gamePauseButton = document.getElementById("waiting-game-pause");
     const gameRestartButton = document.getElementById("waiting-game-restart");
@@ -699,6 +705,7 @@
             contentType: "application/vnd.microsoft.card.hero",
             content: {
               title: "개인정보를 작성하시겠어요?",
+              subtitle: "개인정보 입력은 선택사항이에요. 주민등록번호나 계좌번호 등 불필요한 정보는 입력하지 마세요.",
               buttons: [
                 { type: "imBack", title: "예", value: "aide-privacy:" + privacyPromptVersion + ":yes" },
                 { type: "imBack", title: "아니요", value: "aide-privacy:" + privacyPromptVersion + ":no" }
@@ -717,7 +724,7 @@
     function handleBotActivity(activity) {
       if (!activity || !activity.from || activity.from.role === "user") return;
       if (activity.type === "typing") {
-        if (reportGenerationPending && !reportTypingTimer) {
+        if (reportGenerationPending && privacyDecisionMade && !reportTypingTimer) {
           reportTypingTimer = window.setTimeout(() => {
             reportTypingTimer = 0;
             if (!reportGenerationPending) return;
@@ -735,6 +742,7 @@
       if (isPrivacyChoicePrompt(text)) {
         privacyPromptVersion += 1;
         privacyChoicePending = true;
+        privacyDecisionMade = false;
         window.clearTimeout(reportTypingTimer);
         reportTypingTimer = 0;
         reportGenerationPending = false;
@@ -775,14 +783,14 @@
     }
 
     function startWaitingGame(restart = false) {
-      if (!restart && (waitingGame.active || waitingGame.paused || waitingGame.gameOver)) {
+      if (!restart && waitingGame.update) {
         waitingForReport = true;
         return;
       }
       cancelAnimationFrame(waitingGame.frame);
       waitingGame.obstacles.forEach((obstacle) => obstacle.element.remove());
       waitingGame.obstacles = [];
-      waitingGame.active = true;
+      waitingGame.active = restart;
       waitingGame.lastTime = 0;
       waitingGame.elapsed = 0;
       waitingGame.distance = 0;
@@ -801,8 +809,11 @@
         : "보고서를 기다리는 동안 장애물을 피해 보세요. 짧게 누르면 낮게, 길게 누르면 높이 뛰어요.";
       gameRunner.style.transform = "";
       gameScore.textContent = "점수 0 · 난이도 1";
-      gameJumpButton.disabled = false;
-      gamePauseButton.disabled = false;
+      gameStartButton.hidden = restart;
+      gameJumpButton.hidden = !restart;
+      gamePauseButton.hidden = !restart;
+      gameJumpButton.disabled = !restart;
+      gamePauseButton.disabled = !restart;
       gameRestartButton.hidden = true;
       gamePauseButton.textContent = "일시정지";
       gamePauseButton.setAttribute("aria-pressed", "false");
@@ -876,7 +887,7 @@
       }
 
       waitingGame.update = updateGame;
-      waitingGame.frame = requestAnimationFrame(updateGame);
+      if (restart) waitingGame.frame = requestAnimationFrame(updateGame);
     }
 
     function toggleWaitingGamePause() {
@@ -893,6 +904,17 @@
       waitingGame.frame = requestAnimationFrame(waitingGame.update);
     }
 
+    gameStartButton.addEventListener("click", () => {
+      if (waitingGame.active || waitingGame.gameOver || !waitingGame.update) return;
+      waitingGame.active = true;
+      waitingGame.lastTime = 0;
+      gameStartButton.hidden = true;
+      gameJumpButton.hidden = false;
+      gamePauseButton.hidden = false;
+      gameJumpButton.disabled = false;
+      gamePauseButton.disabled = false;
+      waitingGame.frame = requestAnimationFrame(waitingGame.update);
+    });
     gameJumpButton.addEventListener("pointerdown", (event) => {
       event.preventDefault();
       gameJumpButton.setPointerCapture(event.pointerId);
@@ -944,6 +966,7 @@
     });
     document.addEventListener("keydown", (event) => {
       if (!gamePanel.hidden && document.activeElement !== gamePauseButton &&
+          document.activeElement !== gameStartButton && document.activeElement !== gameRestartButton &&
           (event.code === "Space" || event.code === "ArrowUp") &&
           !["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) {
         event.preventDefault();
@@ -961,10 +984,24 @@
     function setWorking(text) {
       workStatus.textContent = text;
     }
+    function warnBeforeUnload(event) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+    function updateUnloadWarning() {
+      const shouldWarn = hasUserMessage || messageInput.value.trim().length > 0;
+      if (shouldWarn === unloadWarningEnabled) return;
+      unloadWarningEnabled = shouldWarn;
+      if (shouldWarn) window.addEventListener("beforeunload", warnBeforeUnload);
+      else window.removeEventListener("beforeunload", warnBeforeUnload);
+    }
+    messageInput.addEventListener("input", updateUnloadWarning);
     function sendMessage(text, preserveDraft = false) {
       const content = text.trim();
       if (!content) return;
       if (localPreview) {
+        hasUserMessage = true;
+        updateUnloadWarning();
         privacyChoicePending = false;
         const messages = document.getElementById("local-preview-messages");
         const previewMessage = document.createElement("div");
@@ -988,11 +1025,15 @@
       }
       if (!directLine) return;
       const wasPrivacyChoice = privacyChoicePending;
+      const previousPrivacyDecision = privacyDecisionMade;
       const promptVersion = privacyPromptVersion;
       privacyChoicePending = false;
+      hasUserMessage = true;
+      updateUnloadWarning();
       document.body.classList.add("is-started");
       requestAnimationFrame(() => document.getElementById("chat").scrollIntoView({ block: "start", behavior: "smooth" }));
       if (reportFlowStage === "awaiting_privacy" || reportFlowStage === "awaiting_privacy_details") {
+        if (reportFlowStage === "awaiting_privacy") privacyDecisionMade = true;
         reportGenerationPending = false;
         reportFlowStage = reportFlowStage === "awaiting_privacy" && content !== "아니요"
           ? "awaiting_privacy_details" : "awaiting_memo";
@@ -1008,6 +1049,7 @@
         error: () => {
           if (wasPrivacyChoice && privacyPromptVersion === promptVersion) {
             privacyChoicePending = true;
+            privacyDecisionMade = previousPrivacyDecision;
             reportFlowStage = "awaiting_privacy";
           }
           showError("메시지를 보내지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.");
