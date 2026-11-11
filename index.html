@@ -730,7 +730,6 @@
             if (!reportGenerationPending) return;
             reportGenerationPending = false;
             reportFlowStage = "generating";
-            startWaitingGame();
             setWorking("AIDE가 보고서를 작성하고 있어요...");
           }, 700);
         }
@@ -764,7 +763,6 @@
       if (reportGenerationPending && isReportGenerationNotice(text)) {
         reportGenerationPending = false;
         reportFlowStage = "generating";
-        startWaitingGame();
         setWorking("AIDE가 보고서를 작성하고 있어요...");
         return;
       }
@@ -804,9 +802,7 @@
       waitingGame.spawnIn = 2;
       waitingForReport = true;
       document.body.classList.add("is-waiting");
-      gameHint.textContent = localPreview
-        ? "화면 미리보기용 게임이에요. 짧게 누르면 낮게, 길게 누르면 높이 뛰어요."
-        : "보고서를 기다리는 동안 장애물을 피해 보세요. 짧게 누르면 낮게, 길게 누르면 높이 뛰어요.";
+      gameHint.textContent = "짧게 누르면 낮게, 길게 누르면 높이 뛰어요. 스페이스바나 ↑ 키도 사용할 수 있어요.";
       gameRunner.style.transform = "";
       gameScore.textContent = "점수 0 · 난이도 1";
       gameStartButton.hidden = restart;
@@ -1008,16 +1004,15 @@
         previewMessage.className = "local-preview__user";
         previewMessage.textContent = content;
         messages.append(previewMessage);
-        document.body.classList.add("is-started");
+        if (returnToGameButton.hidden) document.body.classList.add("is-started");
         if (/보고서.{0,12}(?:작성|만들|생성).{0,8}(?:시작|해줘|해주세요)|초안.{0,8}(?:작성|만들).{0,8}(?:시작|해줘|해주세요)/i.test(content)) {
           reportFlowStage = "generating";
-          startWaitingGame();
-          setWorking("디자인 미리보기 · 보고서 작성 중을 가정하고 게임을 표시하고 있어요.");
+          setWorking("디자인 미리보기 · 보고서 작성 중을 가정하고 있어요.");
         } else if (isInformationCollectionPrompt(content)) {
           reportFlowStage = /개인\s*정보/i.test(content) ? "awaiting_privacy" : "awaiting_memo";
-          setWorking("디자인 미리보기 · 정보 확인 단계에서는 게임을 표시하지 않아요.");
+          setWorking("디자인 미리보기 · 보고서에 필요한 내용을 확인하고 있어요.");
         } else {
-          setWorking("디자인 미리보기 · 보고서 작성을 시작하면 게임이 표시돼요.");
+          setWorking("디자인 미리보기 · 입력한 메시지는 화면에만 표시됩니다.");
         }
         if (!preserveDraft) messageInput.value = "";
         requestAnimationFrame(() => document.getElementById("chat").scrollIntoView({ block: "start", behavior: "smooth" }));
@@ -1030,7 +1025,7 @@
       privacyChoicePending = false;
       hasUserMessage = true;
       updateUnloadWarning();
-      document.body.classList.add("is-started");
+      if (returnToGameButton.hidden) document.body.classList.add("is-started");
       requestAnimationFrame(() => document.getElementById("chat").scrollIntoView({ block: "start", behavior: "smooth" }));
       if (reportFlowStage === "awaiting_privacy" || reportFlowStage === "awaiting_privacy_details") {
         if (reportFlowStage === "awaiting_privacy") privacyDecisionMade = true;
@@ -1041,7 +1036,7 @@
       } else if (reportFlowStage === "awaiting_memo" || reportFlowStage === "awaiting_followup") {
         reportGenerationPending = true;
         reportFlowStage = "awaiting_generation";
-        setWorking("내용을 확인했어요. 보고서 작성이 시작되면 게임이 나타나요.");
+        setWorking("내용을 확인했어요. AIDE가 보고서 작성을 준비하고 있어요.");
       } else {
         setWorking("AIDE가 필요한 내용을 확인하고 있어요...");
       }
@@ -1161,6 +1156,8 @@
         showError("채팅을 시작하지 못했어요. 새로고침 후 다시 시도해 주세요.");
       }
     }
+    document.body.classList.add("is-started");
+    startWaitingGame();
     connect();
   </script>
 </body>
