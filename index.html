@@ -681,14 +681,18 @@
     function privacyChoiceActivity(activity) {
       const lines = activity.text.split(/\r?\n/);
       let foundQuestion = false;
-      const remainingLines = lines.filter((line) => {
+      const remainingLines = lines.map((line) => {
         if (isPrivacyChoicePrompt(line)) {
           foundQuestion = true;
-          return false;
+          const memoIndex = line.indexOf("메모");
+          if (memoIndex < 0) return "";
+          const prefix = line.slice(0, memoIndex);
+          const boundary = Math.max(prefix.lastIndexOf("."), prefix.lastIndexOf("?"), prefix.lastIndexOf("!"));
+          return boundary < 0 ? line : line.slice(boundary + 1).trim();
         }
-        if (foundQuestion && /^\s*(?:\d+[.)]\s*)?(?:\*\*)?(?:네|예|아니요)(?:\*\*)?\s*[:：→-]/.test(line)) return false;
-        if (foundQuestion && /(?:네|예).{0,15}아니요|아니요.{0,15}(?:네|예)/.test(line) && /(?:답|선택)/.test(line)) return false;
-        return true;
+        if (foundQuestion && /^\s*(?:\d+[.)]\s*)?(?:\*\*)?(?:네|예|아니요)(?:\*\*)?\s*[:：→-]/.test(line)) return "";
+        if (foundQuestion && /(?:네|예).{0,15}아니요|아니요.{0,15}(?:네|예)/.test(line) && /(?:답|선택)/.test(line)) return "";
+        return line;
       });
       return {
         ...activity,
