@@ -739,7 +739,7 @@
     function handleBotActivity(activity) {
       if (!activity || !activity.from || activity.from.role === "user") return;
       if (activity.type === "typing") {
-        if (!privacyChoicePending) setWorking("AIDE가 보고서를 작성하고 있어요...", true);
+        if (!privacyChoicePending) showPendingResponseStatus();
         return;
       }
       if (activity.type !== "message") return;
@@ -763,6 +763,9 @@
         reportFlowStage = /(?:업무|실습)\s*메모|메모.{0,16}(?:입력|작성|남겨|알려|보내|적어|말해)/i.test(text)
           ? "awaiting_memo"
           : /개인\s*정보/i.test(text) ? "awaiting_privacy_details" : "awaiting_memo";
+        setWorking(reportFlowStage === "awaiting_memo"
+          ? "보고서에 담을 업무 메모를 입력해 주세요."
+          : "보고서에 필요한 개인정보를 입력해 주세요.");
         return;
       }
       if (reportGenerationPending && isReportGenerationNotice(text)) {
@@ -986,6 +989,11 @@
       workStatus.textContent = text;
       workStatus.classList.toggle("is-pending", pending);
     }
+    function showPendingResponseStatus() {
+      setWorking(reportGenerationPending || reportFlowStage === "generating"
+        ? "AIDE가 보고서를 작성하고 있어요..."
+        : "AIDE가 보고서에 필요한 내용을 확인하고 있어요...", true);
+    }
     function warnBeforeUnload(event) {
       event.preventDefault();
       event.returnValue = "";
@@ -1057,7 +1065,7 @@
         reportGenerationPending = true;
         reportFlowStage = "awaiting_generation";
       }
-      setWorking("AIDE가 보고서를 작성하고 있어요...", true);
+      showPendingResponseStatus();
       directLine.postActivity({ type: "message", text: content, from: { id: "user" } }).subscribe({
         error: () => {
           if (wasPrivacyChoice && privacyPromptVersion === promptVersion) {
