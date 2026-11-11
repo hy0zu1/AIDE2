@@ -992,6 +992,15 @@
       else window.removeEventListener("beforeunload", warnBeforeUnload);
     }
     messageInput.addEventListener("input", updateUnloadWarning);
+    function showGameAfterFirstMessage() {
+      if (!waitingGame.update) {
+        document.body.classList.add("is-started");
+        startWaitingGame();
+      } else if (returnToGameButton.hidden) {
+        document.body.classList.add("is-started");
+      }
+    }
+
     function sendMessage(text, preserveDraft = false) {
       const content = text.trim();
       if (!content) return;
@@ -1004,7 +1013,7 @@
         previewMessage.className = "local-preview__user";
         previewMessage.textContent = content;
         messages.append(previewMessage);
-        if (returnToGameButton.hidden) document.body.classList.add("is-started");
+        showGameAfterFirstMessage();
         if (/보고서.{0,12}(?:작성|만들|생성).{0,8}(?:시작|해줘|해주세요)|초안.{0,8}(?:작성|만들).{0,8}(?:시작|해줘|해주세요)/i.test(content)) {
           reportFlowStage = "generating";
           setWorking("디자인 미리보기 · 보고서 작성 중을 가정하고 있어요.");
@@ -1025,7 +1034,7 @@
       privacyChoicePending = false;
       hasUserMessage = true;
       updateUnloadWarning();
-      if (returnToGameButton.hidden) document.body.classList.add("is-started");
+      showGameAfterFirstMessage();
       requestAnimationFrame(() => document.getElementById("chat").scrollIntoView({ block: "start", behavior: "smooth" }));
       if (reportFlowStage === "awaiting_privacy" || reportFlowStage === "awaiting_privacy_details") {
         if (reportFlowStage === "awaiting_privacy") privacyDecisionMade = true;
@@ -1156,8 +1165,6 @@
         showError("채팅을 시작하지 못했어요. 새로고침 후 다시 시도해 주세요.");
       }
     }
-    document.body.classList.add("is-started");
-    startWaitingGame();
     connect();
   </script>
 </body>
