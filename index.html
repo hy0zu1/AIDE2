@@ -739,7 +739,7 @@
     function handleBotActivity(activity) {
       if (!activity || !activity.from || activity.from.role === "user") return;
       if (activity.type === "typing") {
-        if (!privacyChoicePending) setWorking("AIDE가 답변을 작성 중이에요...", true);
+        if (!privacyChoicePending) setWorking("AIDE가 보고서를 작성하고 있어요...", true);
         return;
       }
       if (activity.type !== "message") return;
@@ -1057,7 +1057,7 @@
         reportGenerationPending = true;
         reportFlowStage = "awaiting_generation";
       }
-      setWorking("AIDE가 답변을 작성 중이에요...", true);
+      setWorking("AIDE가 보고서를 작성하고 있어요...", true);
       directLine.postActivity({ type: "message", text: content, from: { id: "user" } }).subscribe({
         error: () => {
           if (wasPrivacyChoice && privacyPromptVersion === promptVersion) {
