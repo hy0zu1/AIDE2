@@ -196,12 +196,8 @@
     .feature-number { color: var(--accent); font-size: 11px; font-weight: 750; letter-spacing: .12em; }
     .feature h3 { margin: 13px 0 8px; font-size: 18px; letter-spacing: -.04em; }
     .feature p { max-width: 340px; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
-    .mockup { position: absolute; right: 20px; bottom: 18px; display: flex; width: 125px; height: 78px; align-items: end; justify-content: center; gap: 6px; padding: 12px; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--accent-soft) 55%, var(--card)); }
-    .mockup i { display: block; width: 18px; border-radius: 4px 4px 2px 2px; background: var(--accent); opacity: .78; }
-    .mockup i:nth-child(1) { height: 25px; opacity: .35; }
-    .mockup i:nth-child(2) { height: 42px; opacity: .6; }
-    .mockup i:nth-child(3) { height: 32px; }
-    .mockup i:nth-child(4) { height: 50px; opacity: .48; }
+    .mockup { position: absolute; right: 20px; bottom: 18px; display: flex; width: 125px; height: 78px; align-items: center; justify-content: center; padding: 8px; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--accent-soft) 55%, var(--card)); }
+    .mockup svg { width: 58px; height: 58px; fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
     .steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
     .step { padding: 22px 18px 26px 0; }
     .step + .step { padding-left: 18px; border-left: 1px solid var(--line); }
@@ -510,11 +506,11 @@
     <section class="section" id="features">
       <div class="section-heading"><div><p class="kicker" data-copy="featureKicker">AIDE가 도와드리는 일</p><h2 data-copy="featureTitle">실습의 메모를 보고서로 정리해요.</h2></div><p data-copy="featureDescription">작성해 둔 내용을 바탕으로 실습 경험을 읽기 쉬운 보고서 초안으로 정리하도록 도와드려요.</p></div>
       <div class="feature-grid">
-        <article class="feature"><span class="feature-number">(01)</span><h3 data-copy="feature1Title">실습 메모 정리</h3><p data-copy="feature1Text">현장에서 적은 메모와 업무 내용을 정돈된 기록으로 정리해요.</p><div class="mockup" aria-hidden="true"><i></i><i></i><i></i><i></i></div></article>
-        <article class="feature"><span class="feature-number">(02)</span><h3 data-copy="feature2Title">경험 구체화</h3><p data-copy="feature2Text">기억에 남는 경험과 배운 점을 보고서에 담을 수 있도록 도와요.</p><div class="mockup" aria-hidden="true"><i></i><i></i><i></i><i></i></div></article>
-        <article class="feature"><span class="feature-number">(03)</span><h3 data-copy="feature3Title">보고서 초안 작성</h3><p data-copy="feature3Text">입력한 내용을 바탕으로 현장 실습 보고서 초안 작성을 도와요.</p><div class="mockup" aria-hidden="true"><i></i><i></i><i></i><i></i></div></article>
-        <article class="feature"><span class="feature-number">(04)</span><h3 data-copy="feature4Title">읽기 쉬운 문장</h3><p data-copy="feature4Text">메모를 자연스럽게 다듬고 내용의 흐름을 정리해요.</p><div class="mockup" aria-hidden="true"><i></i><i></i><i></i><i></i></div></article>
-        <article class="feature"><span class="feature-number">(05)</span><h3 data-copy="feature5Title">대화로 수정</h3><p data-copy="feature5Text">초안을 확인한 뒤 필요한 내용을 이어서 요청할 수 있어요.</p><div class="mockup" aria-hidden="true"><i></i><i></i><i></i><i></i></div></article>
+        <article class="feature"><span class="feature-number">(01)</span><h3 data-copy="feature1Title">실습 메모 정리</h3><p data-copy="feature1Text">현장에서 적은 메모와 업무 내용을 정돈된 기록으로 정리해요.</p><div class="mockup" aria-hidden="true"><svg viewBox="0 0 64 64"><rect x="14" y="10" width="36" height="44" rx="4"/><path d="M22 10v44M28 22h15M28 30h15M28 38h10"/><path d="M11 19h6M11 28h6M11 37h6" opacity=".55"/></svg></div></article>
+        <article class="feature"><span class="feature-number">(02)</span><h3 data-copy="feature2Title">경험 구체화</h3><p data-copy="feature2Text">기억에 남는 경험과 배운 점을 보고서에 담을 수 있도록 도와요.</p><div class="mockup" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M22 28a10 10 0 1 1 17 7c-2 2-3 4-3 6H28c0-2-1-4-3-6a10 10 0 0 1-3-7ZM28 47h8M30 52h4"/><path d="M32 9V5M16 15l-3-3M48 15l3-3M13 29H9M55 29h-4" opacity=".55"/></svg></div></article>
+        <article class="feature"><span class="feature-number">(03)</span><h3 data-copy="feature3Title">보고서 초안 작성</h3><p data-copy="feature3Text">입력한 내용을 바탕으로 현장 실습 보고서 초안 작성을 도와요.</p><div class="mockup" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M16 9h23l9 9v35H16zM39 9v10h9M23 27h18M23 34h12M23 41h8"/><path d="m35 45 12-12 4 4-12 12-6 2z" fill="var(--accent-soft)"/></svg></div></article>
+        <article class="feature"><span class="feature-number">(04)</span><h3 data-copy="feature4Title">읽기 쉬운 문장</h3><p data-copy="feature4Text">메모를 자연스럽게 다듬고 내용의 흐름을 정리해요.</p><div class="mockup" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M13 17h30M13 25h23M13 33h28M13 41h18M13 49h22"/><path d="m40 43 5 5 9-11" stroke-width="3"/><path d="M48 12v8M44 16h8" opacity=".55"/></svg></div></article>
+        <article class="feature"><span class="feature-number">(05)</span><h3 data-copy="feature5Title">대화로 수정</h3><p data-copy="feature5Text">초안을 확인한 뒤 필요한 내용을 이어서 요청할 수 있어요.</p><div class="mockup" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M12 14h30a5 5 0 0 1 5 5v15a5 5 0 0 1-5 5H26l-9 7v-7h-5a5 5 0 0 1-5-5V19a5 5 0 0 1 5-5Z"/><path d="M17 24h20M17 30h13"/><path d="m38 49 12-12 4 4-12 12-6 2z" fill="var(--accent-soft)"/></svg></div></article>
       </div>
     </section>
 
