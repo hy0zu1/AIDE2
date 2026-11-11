@@ -107,7 +107,8 @@
     .suggestions { margin: 9px 0; }
     .chip { padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; transition: transform .18s ease, border-color .18s ease, background .18s ease; }
     .chip:hover { transform: translateY(-2px); border-color: var(--accent); background: var(--accent-soft); }
-    .work-status { min-height: 17px; margin: 3px 1px 8px; color: var(--muted); font-size: 11px; }
+    .work-status { margin: 0 0 12px; padding: 10px 12px; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px; background: var(--accent-soft); color: var(--ink); font-size: 14px; font-weight: 600; line-height: 1.5; word-break: keep-all; }
+    .work-status.is-pending { border-color: var(--accent); font-weight: 750; }
     .assistant-workspace { min-width: 0; }
     .waiting-game[hidden] { display: none !important; }
     .waiting-game { display: flex; flex-direction: column; min-width: 0; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow); }
@@ -479,8 +480,8 @@
             <div class="window-bar"><i class="window-dot"></i><i class="window-dot"></i><i class="window-dot"></i><span class="window-label" data-copy="chatTitle">AIDE 현장 실습 보고서 도우미</span><button class="chat-reload-logo" type="button" data-reload aria-label="AIDE 페이지 새로고침" title="새로고침"><span class="logo-mark">A</span><span>AIDE</span></button></div>
             <div id="webchat" aria-label="대화 내용"></div>
             <div class="chat-foot">
-              <div class="examples" aria-label="예시 요청"><button class="chip" type="button" data-example-index="0">오늘 실습 메모 정리하기</button><button class="chip" type="button" data-example-index="1">기억에 남는 경험 기록하기</button><button class="chip" type="button" data-example-index="2">보고서 문장 다듬기</button></div>
               <p class="work-status" id="work-status" aria-live="polite">실습 내용을 적거나 예시를 골라 시작해 보세요.</p>
+              <div class="examples" aria-label="예시 요청"><button class="chip" type="button" data-example-index="0">오늘 실습 메모 정리하기</button><button class="chip" type="button" data-example-index="1">기억에 남는 경험 기록하기</button><button class="chip" type="button" data-example-index="2">보고서 문장 다듬기</button></div>
               <div class="suggestions" aria-label="빠른 요청"><button class="chip" type="button" data-prompt="오늘 실습에서 한 업무를 보고서 초안으로 정리해줘">보고서 초안 정리 →</button><button class="chip" type="button" data-prompt="이 메모를 자연스러운 문장으로 다듬어줘">문장 다듬기 →</button><button class="chip" type="button" data-prompt="실습 내용을 항목별로 정리해줘">항목별 정리 →</button></div>
               <form class="composer" id="composer"><input id="message" type="text" autocomplete="off" placeholder="오늘의 실습 내용을 편하게 적어주세요..." aria-label="메시지 입력" data-copy-placeholder="placeholder" disabled><button id="send" type="submit" aria-label="메시지 보내기" disabled>↑</button></form>
               <p class="composer-hint" data-copy="hint">메모를 바탕으로 초안을 만들고, 대화로 내용을 다듬을 수 있어요.</p>
@@ -601,10 +602,8 @@
     let waitingForReport = false;
     let reportFlowStage = "idle";
     let reportGenerationPending = false;
-    let reportTypingTimer = 0;
     let privacyPromptVersion = 0;
     let privacyChoicePending = false;
-    let privacyDecisionMade = false;
     let hasUserMessage = false;
     let unloadWarningEnabled = false;
     const waitingGame = {
@@ -671,8 +670,6 @@
     }
 
     function finishWaitingGame() {
-      window.clearTimeout(reportTypingTimer);
-      reportTypingTimer = 0;
       waitingGame.active = false;
       cancelAnimationFrame(waitingGame.frame);
       waitingGame.obstacles.forEach((obstacle) => obstacle.element.remove());
@@ -742,46 +739,36 @@
     function handleBotActivity(activity) {
       if (!activity || !activity.from || activity.from.role === "user") return;
       if (activity.type === "typing") {
-        if (reportGenerationPending && privacyDecisionMade && !reportTypingTimer) {
-          reportTypingTimer = window.setTimeout(() => {
-            reportTypingTimer = 0;
-            if (!reportGenerationPending) return;
-            reportGenerationPending = false;
-            reportFlowStage = "generating";
-            setWorking("AIDE가 보고서를 작성하고 있어요...");
-          }, 700);
-        }
+        if (!privacyChoicePending) setWorking("AIDE가 답변을 작성 중이에요...", true);
         return;
       }
       if (activity.type !== "message") return;
 
       const text = typeof activity.text === "string" ? activity.text : "";
+      setWorking("답변이 도착했어요. 대화를 계속해 주세요.");
       if (isPrivacyChoicePrompt(text)) {
         privacyPromptVersion += 1;
         privacyChoicePending = true;
-        privacyDecisionMade = false;
-        window.clearTimeout(reportTypingTimer);
-        reportTypingTimer = 0;
         reportGenerationPending = false;
         reportFlowStage = "awaiting_privacy";
         setWorking("개인정보 작성 여부를 선택해 주세요.");
         return;
       }
-      if (privacyChoicePending) return;
+      if (privacyChoicePending) {
+        setWorking("개인정보 작성 여부를 선택해 주세요.");
+        return;
+      }
       if (isInformationCollectionPrompt(text)) {
-        window.clearTimeout(reportTypingTimer);
-        reportTypingTimer = 0;
         reportGenerationPending = false;
         reportFlowStage = /(?:업무|실습)\s*메모|메모.{0,16}(?:입력|작성|남겨|알려|보내|적어|말해)/i.test(text)
           ? "awaiting_memo"
           : /개인\s*정보/i.test(text) ? "awaiting_privacy_details" : "awaiting_memo";
-        setWorking("AIDE가 보고서에 필요한 내용을 확인하고 있어요.");
         return;
       }
       if (reportGenerationPending && isReportGenerationNotice(text)) {
         reportGenerationPending = false;
         reportFlowStage = "generating";
-        setWorking("AIDE가 보고서를 작성하고 있어요...");
+        setWorking("AIDE가 보고서를 작성하고 있어요...", true);
         return;
       }
       if (reportFlowStage === "generating" && waitingForReport) {
@@ -790,12 +777,12 @@
         return;
       }
       if (reportGenerationPending && /[?？]|(?:알려|입력|작성|선택)해\s*주세요|원하시나요|어떠신가요/.test(text)) {
-        window.clearTimeout(reportTypingTimer);
-        reportTypingTimer = 0;
         reportGenerationPending = false;
         reportFlowStage = "awaiting_followup";
-        setWorking("AIDE가 보고서에 필요한 내용을 확인하고 있어요.");
+        return;
       }
+      reportGenerationPending = false;
+      reportFlowStage = "complete";
     }
 
     function startWaitingGame(restart = false) {
@@ -993,10 +980,11 @@
 
     function showError(text) {
       status.textContent = text;
-      workStatus.textContent = text;
+      setWorking(text);
     }
-    function setWorking(text) {
+    function setWorking(text, pending = false) {
       workStatus.textContent = text;
+      workStatus.classList.toggle("is-pending", pending);
     }
     function warnBeforeUnload(event) {
       event.preventDefault();
@@ -1055,7 +1043,6 @@
       }
       if (!directLine) return;
       const wasPrivacyChoice = privacyChoicePending;
-      const previousPrivacyDecision = privacyDecisionMade;
       const promptVersion = privacyPromptVersion;
       privacyChoicePending = false;
       hasUserMessage = true;
@@ -1063,23 +1050,18 @@
       showGameAfterFirstMessage();
       requestAnimationFrame(() => document.getElementById("chat").scrollIntoView({ block: "start", behavior: "smooth" }));
       if (reportFlowStage === "awaiting_privacy" || reportFlowStage === "awaiting_privacy_details") {
-        if (reportFlowStage === "awaiting_privacy") privacyDecisionMade = true;
         reportGenerationPending = false;
         reportFlowStage = reportFlowStage === "awaiting_privacy" && content !== "아니요"
           ? "awaiting_privacy_details" : "awaiting_memo";
-        setWorking("AIDE가 보고서에 필요한 내용을 확인하고 있어요.");
       } else if (reportFlowStage === "awaiting_memo" || reportFlowStage === "awaiting_followup") {
         reportGenerationPending = true;
         reportFlowStage = "awaiting_generation";
-        setWorking("내용을 확인했어요. AIDE가 보고서 작성을 준비하고 있어요.");
-      } else {
-        setWorking("AIDE가 필요한 내용을 확인하고 있어요...");
       }
+      setWorking("AIDE가 답변을 작성 중이에요...", true);
       directLine.postActivity({ type: "message", text: content, from: { id: "user" } }).subscribe({
         error: () => {
           if (wasPrivacyChoice && privacyPromptVersion === promptVersion) {
             privacyChoicePending = true;
-            privacyDecisionMade = previousPrivacyDecision;
             reportFlowStage = "awaiting_privacy";
           }
           showError("메시지를 보내지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.");
