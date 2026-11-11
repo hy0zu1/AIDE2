@@ -99,6 +99,8 @@
     .suggestions { margin: 9px 0; }
     .chip { padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; transition: transform .18s ease, border-color .18s ease, background .18s ease; }
     .chip:hover { transform: translateY(-2px); border-color: var(--accent); background: var(--accent-soft); }
+    .privacy-choices:not([hidden]) { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin: 9px 0; }
+    .privacy-choices__label { color: var(--muted); font-size: 11px; }
     .work-status { min-height: 17px; margin: 3px 1px 8px; color: var(--muted); font-size: 11px; }
     .assistant-workspace { min-width: 0; }
     .waiting-game[hidden] { display: none !important; }
@@ -477,6 +479,11 @@
             <div class="chat-foot">
               <div class="examples" aria-label="예시 요청"><button class="chip" type="button" data-example-index="0">오늘 실습 메모 정리하기</button><button class="chip" type="button" data-example-index="1">기억에 남는 경험 기록하기</button><button class="chip" type="button" data-example-index="2">보고서 문장 다듬기</button></div>
               <p class="work-status" id="work-status" aria-live="polite">실습 내용을 적거나 예시를 골라 시작해 보세요.</p>
+              <div class="privacy-choices" id="privacy-choices" role="group" aria-label="개인정보 작성 여부" hidden>
+                <span class="privacy-choices__label">개인정보를 작성하시겠어요?</span>
+                <button class="chip" type="button" data-privacy-choice="예">예</button>
+                <button class="chip" type="button" data-privacy-choice="아니요">아니요</button>
+              </div>
               <div class="suggestions" aria-label="빠른 요청"><button class="chip" type="button" data-prompt="오늘 실습에서 한 업무를 보고서 초안으로 정리해줘">보고서 초안 정리 →</button><button class="chip" type="button" data-prompt="이 메모를 자연스러운 문장으로 다듬어줘">문장 다듬기 →</button><button class="chip" type="button" data-prompt="실습 내용을 항목별로 정리해줘">항목별 정리 →</button></div>
               <form class="composer" id="composer"><input id="message" type="text" autocomplete="off" placeholder="오늘의 실습 내용을 편하게 적어주세요..." aria-label="메시지 입력" data-copy-placeholder="placeholder" disabled><button id="send" type="submit" aria-label="메시지 보내기" disabled>↑</button></form>
               <p class="composer-hint" data-copy="hint">메모를 바탕으로 초안을 만들고, 대화로 내용을 다듬을 수 있어요.</p>
@@ -587,6 +594,8 @@
     let reportFlowStage = "idle";
     let reportGenerationPending = false;
     let reportTypingTimer = 0;
+    let privacyPromptVersion = 0;
+    const privacyChoices = document.getElementById("privacy-choices");
     const waitingGame = {
       active: false,
       frame: 0,
@@ -672,6 +681,10 @@
       return /개인\s*정보.{0,24}(?:원하시나요|동의|작성|입력|알려|받아도|괜찮|필요)|(?:업무|실습)\s*메모|메모.{0,16}(?:입력|작성|남겨|알려|보내|적어|말해)|(?:오늘|실습).{0,20}(?:무슨|어떤|맡은|하신).{0,12}(?:업무|일|실습)|업무.{0,16}(?:하셨|했|수행|담당)/i.test(text);
     }
 
+    function isPrivacyChoicePrompt(text) {
+      return /개인\s*정보[\s\S]{0,80}(?:원하시나요|원하십니까|원하세요|하시겠(?:어요|습니까|나요)|할까요|동의하시나요)/i.test(text);
+    }
+
     function isReportGenerationNotice(text) {
       if (/[?？]/.test(text)) return false;
       return /보고서.{0,24}(?:작성|생성|만들).{0,20}(?:시작|중|할게|하겠|해\s*드릴|해\s*볼|진행|드릴게|드리겠)|(?:작성|생성|만들).{0,16}보고서.{0,20}(?:시작|중|할게|하겠|해\s*드릴|해\s*볼|진행|드릴게|드리겠)|초안.{0,16}(?:작성|생성|만들).{0,20}(?:시작|중|할게|하겠|해\s*드릴|해\s*볼|진행|드릴게|드리겠)/i.test(text);
@@ -695,11 +708,23 @@
       if (activity.type !== "message") return;
 
       const text = typeof activity.text === "string" ? activity.text : "";
+      privacyPromptVersion += 1;
+      privacyChoices.hidden = !isPrivacyChoicePrompt(text);
+      if (!privacyChoices.hidden) {
+        window.clearTimeout(reportTypingTimer);
+        reportTypingTimer = 0;
+        reportGenerationPending = false;
+        reportFlowStage = "awaiting_privacy";
+        setWorking("개인정보 작성 여부를 선택해 주세요.");
+        return;
+      }
       if (isInformationCollectionPrompt(text)) {
         window.clearTimeout(reportTypingTimer);
         reportTypingTimer = 0;
         reportGenerationPending = false;
-        reportFlowStage = /개인\s*정보/i.test(text) ? "awaiting_privacy" : "awaiting_memo";
+        reportFlowStage = /(?:업무|실습)\s*메모|메모.{0,16}(?:입력|작성|남겨|알려|보내|적어|말해)/i.test(text)
+          ? "awaiting_memo"
+          : /개인\s*정보/i.test(text) ? "awaiting_privacy_details" : "awaiting_memo";
         setWorking("AIDE가 보고서에 필요한 내용을 확인하고 있어요.");
         return;
       }
@@ -911,10 +936,11 @@
     function setWorking(text) {
       workStatus.textContent = text;
     }
-    function sendMessage(text) {
+    function sendMessage(text, preserveDraft = false) {
       const content = text.trim();
       if (!content) return;
       if (localPreview) {
+        privacyChoices.hidden = true;
         const messages = document.getElementById("local-preview-messages");
         const previewMessage = document.createElement("div");
         previewMessage.className = "local-preview__user";
@@ -931,14 +957,22 @@
         } else {
           setWorking("디자인 미리보기 · 보고서 작성을 시작하면 게임이 표시돼요.");
         }
-        messageInput.value = "";
+        if (!preserveDraft) messageInput.value = "";
         requestAnimationFrame(() => document.getElementById("chat").scrollIntoView({ block: "start", behavior: "smooth" }));
         return;
       }
       if (!directLine) return;
+      const wasPrivacyChoice = !privacyChoices.hidden;
+      const promptVersion = privacyPromptVersion;
+      privacyChoices.hidden = true;
       document.body.classList.add("is-started");
       requestAnimationFrame(() => document.getElementById("chat").scrollIntoView({ block: "start", behavior: "smooth" }));
-      if (reportFlowStage === "awaiting_privacy" || reportFlowStage === "awaiting_memo" || reportFlowStage === "awaiting_followup") {
+      if (reportFlowStage === "awaiting_privacy" || reportFlowStage === "awaiting_privacy_details") {
+        reportGenerationPending = false;
+        reportFlowStage = reportFlowStage === "awaiting_privacy" && content !== "아니요"
+          ? "awaiting_privacy_details" : "awaiting_memo";
+        setWorking("AIDE가 보고서에 필요한 내용을 확인하고 있어요.");
+      } else if (reportFlowStage === "awaiting_memo" || reportFlowStage === "awaiting_followup") {
         reportGenerationPending = true;
         reportFlowStage = "awaiting_generation";
         setWorking("내용을 확인했어요. 보고서 작성이 시작되면 게임이 나타나요.");
@@ -946,9 +980,15 @@
         setWorking("AIDE가 필요한 내용을 확인하고 있어요...");
       }
       directLine.postActivity({ type: "message", text: content, from: { id: "user" } }).subscribe({
-        error: () => showError("메시지를 보내지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.")
+        error: () => {
+          if (wasPrivacyChoice && privacyPromptVersion === promptVersion) {
+            privacyChoices.hidden = false;
+            reportFlowStage = "awaiting_privacy";
+          }
+          showError("메시지를 보내지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.");
+        }
       });
-      messageInput.value = "";
+      if (!preserveDraft) messageInput.value = "";
     }
     document.getElementById("composer").addEventListener("submit", (event) => {
       event.preventDefault();
@@ -956,6 +996,9 @@
     });
     document.querySelectorAll("[data-prompt]").forEach((button) => {
       button.addEventListener("click", () => sendMessage(button.getAttribute("data-prompt")));
+    });
+    document.querySelectorAll("[data-privacy-choice]").forEach((button) => {
+      button.addEventListener("click", () => sendMessage(button.getAttribute("data-privacy-choice"), true));
     });
 
     async function connect() {
