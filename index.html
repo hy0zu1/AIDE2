@@ -84,7 +84,13 @@
     .chat-card { position: relative; z-index: 2; width: 100%; max-width: 860px; min-width: 0; margin: 0 auto; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow); }
     .window-bar { height: 46px; display: flex; align-items: center; gap: 7px; padding: 0 16px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 11px; }
     .window-dot { width: 7px; height: 7px; border-radius: 50%; background: #d0d7dc; }
-    .window-label { margin-left: 7px; }
+    .window-label { min-width: 0; margin-left: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .reload-button { flex: 0 0 auto; margin-left: auto; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--muted); font-size: 11px; cursor: pointer; }
+    .reload-dialog { width: min(380px, calc(100% - 32px)); padding: 24px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
+    .reload-dialog::backdrop { background: #10233180; }
+    .reload-dialog h2 { margin: 0; font-size: 18px; }
+    .reload-dialog p { margin: 12px 0 22px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .reload-dialog__actions { display: flex; gap: 8px; }
     .chat-card > #webchat { height: 200px; min-height: 0; }
     body.is-started .chat-card { display: flex; flex-direction: column; }
     body.is-started .chat-card > #webchat { flex: 1 1 0; height: auto; min-height: 0; }
@@ -468,7 +474,7 @@
         </div>
         <div class="assistant-workspace">
           <section class="chat-card" aria-label="AIDE 현장 실습 보고서 대화창">
-            <div class="window-bar"><i class="window-dot"></i><i class="window-dot"></i><i class="window-dot"></i><span class="window-label" data-copy="chatTitle">AIDE 현장 실습 보고서 도우미</span></div>
+            <div class="window-bar"><i class="window-dot"></i><i class="window-dot"></i><i class="window-dot"></i><span class="window-label" data-copy="chatTitle">AIDE 현장 실습 보고서 도우미</span><button class="reload-button" id="reload-button" type="button">새로고침</button></div>
             <div id="webchat" aria-label="대화 내용"></div>
             <div class="chat-foot">
               <div class="examples" aria-label="예시 요청"><button class="chip" type="button" data-example-index="0">오늘 실습 메모 정리하기</button><button class="chip" type="button" data-example-index="1">기억에 남는 경험 기록하기</button><button class="chip" type="button" data-example-index="2">보고서 문장 다듬기</button></div>
@@ -529,6 +535,15 @@
     <section class="cta" id="about"><p class="kicker" data-copy="ctaKicker">AIDE 현장 실습 보고서 도우미</p><h2 data-copy="ctaTitle">오늘의 실습을 기록해 보세요.</h2><p data-copy="ctaText">메모를 남기면 AIDE가 보고서 작성을 도와드려요.</p><a href="#chat" data-copy="ctaButton">보고서 시작하기 →</a></section>
   </main>
   <footer class="footer"><span class="footer-mark" data-copy="footerMark">AIDE</span><small><span data-copy="footerLine">AIDE · 현장 실습 보고서 도우미 · © 2026</span> · 해보조</small></footer>
+
+  <dialog class="reload-dialog" id="reload-dialog" aria-labelledby="reload-title" aria-describedby="reload-description">
+    <h2 id="reload-title">새로고침할까요?</h2>
+    <p id="reload-description">작성된 내용이 저장되지 않을 수 있습니다.</p>
+    <form class="reload-dialog__actions" method="dialog">
+      <button class="waiting-game__button" type="submit" autofocus>취소</button>
+      <button class="waiting-game__button waiting-game__button--primary" id="reload-confirm" type="button">새로고침</button>
+    </form>
+  </dialog>
 
   <script src="https://cdn.botframework.com/botframework-webchat/4.18.0/webchat.js"></script>
   <script>
@@ -617,6 +632,7 @@
     const gamePauseButton = document.getElementById("waiting-game-pause");
     const gameRestartButton = document.getElementById("waiting-game-restart");
     const returnToGameButton = document.getElementById("return-to-game");
+    const reloadDialog = document.getElementById("reload-dialog");
     let dinoHoldTimer = 0;
     let dinoHeartTimer = 0;
     let resumeGameWhenReturning = false;
@@ -961,7 +977,7 @@
       releaseJump();
     });
     document.addEventListener("keydown", (event) => {
-      if (!gamePanel.hidden && document.activeElement !== gamePauseButton &&
+      if (!reloadDialog.open && !gamePanel.hidden && document.activeElement !== gamePauseButton &&
           document.activeElement !== gameStartButton && document.activeElement !== gameRestartButton &&
           (event.code === "Space" || event.code === "ArrowUp") &&
           !["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) {
@@ -991,6 +1007,12 @@
       if (shouldWarn) window.addEventListener("beforeunload", warnBeforeUnload);
       else window.removeEventListener("beforeunload", warnBeforeUnload);
     }
+    document.getElementById("reload-button").addEventListener("click", () => reloadDialog.showModal());
+    document.getElementById("reload-confirm").addEventListener("click", () => {
+      window.removeEventListener("beforeunload", warnBeforeUnload);
+      unloadWarningEnabled = false;
+      window.location.reload();
+    });
     messageInput.addEventListener("input", updateUnloadWarning);
     function showGameAfterFirstMessage() {
       if (!waitingGame.update) {
