@@ -109,6 +109,14 @@
     .chip:hover { transform: translateY(-2px); border-color: var(--accent); background: var(--accent-soft); }
     .work-status { margin: 0 0 12px; padding: 10px 12px; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px; background: var(--accent-soft); color: var(--ink); font-size: 14px; font-weight: 600; line-height: 1.5; word-break: keep-all; }
     .work-status.is-pending { border-color: var(--accent); font-weight: 750; }
+    #webchat .webchat__send-box { padding: 8px 12px; border-top: 1px solid var(--line); background: var(--card); }
+    #webchat .webchat__send-box__text-box,
+    #webchat .webchat__send-box__button:not(.webchat__upload-button) { display: none !important; }
+    #webchat .webchat__upload-button { overflow: visible; }
+    #webchat .webchat__upload-button button { position: relative; width: auto; min-width: 154px; height: 38px; padding: 0 12px 0 38px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); }
+    #webchat .webchat__upload-button button svg { position: absolute; left: 12px; width: 18px; height: 18px; }
+    #webchat .webchat__upload-button button::after { content: "워드 양식 업로드"; font-size: 12px; font-weight: 700; white-space: nowrap; }
+    .file-upload-hint { margin: 0 2px 10px; color: var(--muted); font-size: 11px; line-height: 1.5; }
     .assistant-workspace { min-width: 0; }
     .waiting-game[hidden] { display: none !important; }
     .waiting-game { display: flex; flex-direction: column; min-width: 0; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow); }
@@ -481,6 +489,7 @@
             <div id="webchat" aria-label="대화 내용"></div>
             <div class="chat-foot">
               <p class="work-status" id="work-status" aria-live="polite">실습 내용을 적거나 예시를 골라 시작해 보세요.</p>
+              <p class="file-upload-hint">사용 중인 양식이 있다면 Word 파일(.doc 또는 .docx)로 업로드해 주세요.</p>
               <div class="examples" aria-label="예시 요청"><button class="chip" type="button" data-example-index="0">오늘 실습 메모 정리하기</button><button class="chip" type="button" data-example-index="1">기억에 남는 경험 기록하기</button><button class="chip" type="button" data-example-index="2">보고서 문장 다듬기</button></div>
               <div class="suggestions" aria-label="빠른 요청"><button class="chip" type="button" data-prompt="오늘 실습에서 한 업무를 보고서 초안으로 정리해줘">보고서 초안 정리 →</button><button class="chip" type="button" data-prompt="이 메모를 자연스러운 문장으로 다듬어줘">문장 다듬기 →</button><button class="chip" type="button" data-prompt="실습 내용을 항목별로 정리해줘">항목별 정리 →</button></div>
               <form class="composer" id="composer"><input id="message" type="text" autocomplete="off" placeholder="오늘의 실습 내용을 편하게 적어주세요..." aria-label="메시지 입력" data-copy-placeholder="placeholder" disabled><button id="send" type="submit" aria-label="메시지 보내기" disabled>↑</button></form>
@@ -989,6 +998,18 @@
       workStatus.textContent = text;
       workStatus.classList.toggle("is-pending", pending);
     }
+    document.getElementById("webchat").addEventListener("change", (event) => {
+      const input = event.target;
+      if (!(input instanceof HTMLInputElement) || input.type !== "file" || !input.files.length) return;
+      const file = input.files[0];
+      if (!/\.docx?$/i.test(file.name)) {
+        event.stopImmediatePropagation();
+        input.value = "";
+        setWorking("Word 파일(.doc 또는 .docx)만 업로드할 수 있어요.");
+        return;
+      }
+      setWorking("워드 양식을 전송하고 있어요...", true);
+    }, true);
     function showPendingResponseStatus() {
       setWorking(reportGenerationPending || reportFlowStage === "generating"
         ? "AIDE가 보고서를 작성하고 있어요..."
@@ -1171,8 +1192,11 @@
             bubbleTextColor: css.getPropertyValue("--ink").trim(),
             bubbleFromUserTextColor: css.getPropertyValue("--ink").trim(),
             sendBoxBackground: css.getPropertyValue("--card").trim(),
-            hideSendBox: true,
-            hideUploadButton: true,
+            hideSendBox: false,
+            hideUploadButton: false,
+            uploadAccept: ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            uploadMultiple: false,
+            sendAttachmentOn: "attach",
             paddingRegular: 16,
             paddingWide: 24
           }
