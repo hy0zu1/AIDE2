@@ -715,26 +715,25 @@
       return /개인\s*정보.{0,24}(?:원하시나요|동의|작성|입력|알려|받아도|괜찮|필요)|(?:업무|실습)\s*메모|메모.{0,16}(?:입력|작성|남겨|알려|보내|적어|말해)|(?:오늘|실습).{0,20}(?:무슨|어떤|맡은|하신).{0,12}(?:업무|일|실습)|업무.{0,16}(?:하셨|했|수행|담당)/i.test(text);
     }
 
+    const privacyChoicePromptPattern = /개인\s*정보[^.!?？\r\n]{0,80}?(?:원하시나요|원하십니까|원하세요|하시겠(?:어요|습니까|나요)|할까요|동의하시나요)[.!?？]?/i;
+
     function isPrivacyChoicePrompt(text) {
-      return /개인\s*정보[\s\S]{0,80}(?:원하시나요|원하십니까|원하세요|하시겠(?:어요|습니까|나요)|할까요|동의하시나요)/i.test(text);
+      return privacyChoicePromptPattern.test(text);
     }
 
     function privacyChoiceActivity(activity) {
       const lines = activity.text.split(/\r?\n/);
       let foundQuestion = false;
-      const remainingLines = lines.map((line) => {
-        if (isPrivacyChoicePrompt(line)) {
-          foundQuestion = true;
-          const memoIndex = line.indexOf("메모");
-          if (memoIndex < 0) return "";
-          const prefix = line.slice(0, memoIndex);
-          const boundary = Math.max(prefix.lastIndexOf("."), prefix.lastIndexOf("?"), prefix.lastIndexOf("!"));
-          return boundary < 0 ? line : line.slice(boundary + 1).trim();
-        }
-        if (foundQuestion && /^\s*(?:\d+[.)]\s*)?(?:\*\*)?(?:네|예|아니요)(?:\*\*)?\s*[:：→-]/.test(line)) return "";
-        if (foundQuestion && /(?:네|예).{0,15}아니요|아니요.{0,15}(?:네|예)/.test(line) && /(?:답|선택)/.test(line)) return "";
-        return line;
-      });
+      let remainingLines = lines.map((line) => line.replace(privacyChoicePromptPattern, () => {
+        foundQuestion = true;
+        return "";
+      }));
+      if (foundQuestion && !/[?？]/.test(remainingLines.join("\n"))) {
+        remainingLines = remainingLines.filter((line) =>
+          !/^\s*(?:\d+[.)]\s*)?(?:\*\*)?(?:네|예|아니요)(?:\*\*)?\s*[:：→-]/.test(line) &&
+          !(/(?:네|예).{0,15}아니요|아니요.{0,15}(?:네|예)/.test(line) && /(?:답|선택)/.test(line))
+        );
+      }
       return {
         ...activity,
         text: foundQuestion ? remainingLines.join("\n").trim() : activity.text,
