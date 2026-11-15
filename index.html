@@ -127,21 +127,10 @@
     .waiting-game__bird::before { right: 7px; transform: rotate(20deg); }
     .waiting-game__bird::after { left: 7px; transform: rotate(-20deg); }
     .waiting-game__ground { position: absolute; right: 0; bottom: 14px; left: 0; height: 1px; background: var(--muted); opacity: .5; }
-    .waiting-game__runner { position: absolute; bottom: 15px; left: 42px; z-index: 1; display: block; width: 1em; height: 1em; font-size: 27px; line-height: 1; user-select: none; }
-    .waiting-game__runner-sprite { display: block; width: 100%; height: 100%; overflow: visible; }
-    .waiting-game__runner-tail, .waiting-game__runner-body { fill: #42bd70; stroke: #218653; stroke-linejoin: round; stroke-width: 1px; }
-    .waiting-game__runner-eye { fill: #fff; }
-    .waiting-game__runner-pupil { fill: #173c2a; }
-    .waiting-game__runner-leg { fill: #27965a; stroke: #1d7547; stroke-linejoin: round; stroke-width: 1px; transform-box: view-box; }
-    .waiting-game__runner-leg--back { transform-origin: 45% 56%; }
-    .waiting-game__runner-leg--front { fill: #46b86a; transform-origin: 61% 56%; }
-    .waiting-game__runner.is-running .waiting-game__runner-leg--back { animation: dino-leg-back .24s ease-in-out infinite; }
-    .waiting-game__runner.is-running .waiting-game__runner-leg--front { animation: dino-leg-front .24s ease-in-out infinite; }
+    .waiting-game__runner { position: absolute; bottom: 15px; left: 42px; z-index: 1; font-size: 27px; line-height: 1; user-select: none; }
     .waiting-game__runner.is-loved::after { position: absolute; bottom: 85%; left: 50%; color: #e85c83; content: "❤️"; font-size: 18px; animation: heart-pop .9s ease-out both; pointer-events: none; }
     @keyframes cloud-drift { to { translate: 24px 0; } }
     @keyframes bird-drift { to { translate: 18px -5px; } }
-    @keyframes dino-leg-back { 0%, 100% { transform: rotate(28deg); } 50% { transform: rotate(-28deg); } }
-    @keyframes dino-leg-front { 0%, 100% { transform: rotate(-28deg); } 50% { transform: rotate(28deg); } }
     @keyframes heart-pop { 0% { opacity: 0; transform: translate(-50%, 8px) scale(.5); } 25% { opacity: 1; transform: translate(-50%, -2px) scale(1.15); } 100% { opacity: 0; transform: translate(-50%, -20px) scale(.9); } }
     .waiting-game__obstacle { position: absolute; bottom: 15px; left: 0; width: 17px; background: transparent; }
     .waiting-game__obstacle::before { position: absolute; right: 4px; bottom: 0; left: 4px; height: 100%; border-radius: 5px 5px 2px 2px; background: var(--accent); content: ""; }
@@ -517,7 +506,7 @@
               <span class="waiting-game__cloud" aria-hidden="true"></span>
               <span class="waiting-game__cloud waiting-game__cloud--far" aria-hidden="true"></span>
               <span class="waiting-game__bird" aria-hidden="true"></span>
-              <span class="waiting-game__runner" id="waiting-game-runner" aria-hidden="true"><svg class="waiting-game__runner-sprite" viewBox="0 0 48 48"><path class="waiting-game__runner-leg waiting-game__runner-leg--back" d="M20 27 27 27 27 35 24 38 18 38 13 41 5 41 9 37 15 35 16 29Z"></path><path class="waiting-game__runner-tail" d="M31 21C37 19 40 14 45 13 44 18 41 22 38 24 42 27 44 31 45 36 39 33 34 29 30 27Z"></path><path class="waiting-game__runner-body" d="M15 20C19 15 27 15 33 18L37 22 35 30C31 34 22 34 16 30Z"></path><path class="waiting-game__runner-body" d="M21 11C17 8 11 7 6 9L3 12 4 16 8 17 6 20 13 21 19 18 25 18Z"></path><path class="waiting-game__runner-body" d="M20 21 24 22 22 25 18 24Z"></path><circle class="waiting-game__runner-eye" cx="7.5" cy="12" r="1.5"></circle><circle class="waiting-game__runner-pupil" cx="7" cy="12" r=".7"></circle><path class="waiting-game__runner-leg waiting-game__runner-leg--front" d="M27 27 34 27 34 34 32 37 26 38 21 41 13 41 17 37 23 35 23 29Z"></path></svg></span>
+              <span class="waiting-game__runner" id="waiting-game-runner" aria-hidden="true">🦖</span>
             </div>
             <p class="waiting-game__score" id="waiting-game-score">점수 0</p>
             <div class="waiting-game__controls">
@@ -700,7 +689,6 @@
       waitingGame.jumpHoldRemaining = 0;
       waitingGame.paused = false;
       gameRunner.style.transform = "";
-      gameRunner.classList.remove("is-running");
       gamePanel.hidden = true;
       waitingForReport = false;
       document.body.classList.remove("is-waiting");
@@ -858,7 +846,6 @@
         waitingGame.velocityY -= (1550 - holdLift) * delta;
         waitingGame.playerY = Math.max(0, waitingGame.playerY + waitingGame.velocityY * delta);
         if (waitingGame.playerY === 0) waitingGame.velocityY = 0;
-        gameRunner.classList.toggle("is-running", waitingGame.playerY === 0);
         gameRunner.style.transform = "translateY(-" + waitingGame.playerY + "px)";
         gameScore.textContent = "점수 " + score + " · 난이도 " + (difficulty + 1);
 
@@ -895,7 +882,6 @@
             waitingGame.gameOver = true;
             waitingGame.jumpHeld = false;
             waitingGame.velocityY = 0;
-            gameRunner.classList.remove("is-running");
             gameRunner.style.transform = "";
             gameJumpButton.disabled = true;
             gamePauseButton.disabled = true;
@@ -924,7 +910,6 @@
       if (waitingGame.paused) {
         cancelAnimationFrame(waitingGame.frame);
         waitingGame.frame = 0;
-        gameRunner.classList.remove("is-running");
         return;
       }
       waitingGame.lastTime = 0;
