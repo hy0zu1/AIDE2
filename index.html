@@ -109,14 +109,7 @@
     .chip:hover { transform: translateY(-2px); border-color: var(--accent); background: var(--accent-soft); }
     .work-status { margin: 0 0 12px; padding: 10px 12px; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px; background: var(--accent-soft); color: var(--ink); font-size: 14px; font-weight: 600; line-height: 1.5; word-break: keep-all; }
     .work-status.is-pending { border-color: var(--accent); font-weight: 750; }
-    #webchat .webchat__send-box { padding: 8px 12px; border-top: 1px solid var(--line); background: var(--card); }
-    #webchat .webchat__send-box__text-box,
-    #webchat .webchat__send-box__button:not(.webchat__upload-button) { display: none !important; }
-    #webchat .webchat__upload-button { overflow: visible; }
-    #webchat .webchat__upload-button button { position: relative; width: auto; min-width: 154px; height: 38px; padding: 0 12px 0 38px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); }
-    #webchat .webchat__upload-button button svg { position: absolute; left: 12px; width: 18px; height: 18px; }
-    #webchat .webchat__upload-button button::after { content: "워드 양식 업로드"; font-size: 12px; font-weight: 700; white-space: nowrap; }
-    .file-upload-hint { margin: 0 2px 10px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .file-upload-hint { margin: 8px 2px 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
     .assistant-workspace { min-width: 0; }
     .waiting-game[hidden] { display: none !important; }
     .waiting-game { display: flex; flex-direction: column; min-width: 0; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow); }
@@ -165,6 +158,10 @@
     .composer input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent); }
     .composer button { width: 46px; height: 46px; flex: 0 0 46px; border: 0; border-radius: 12px; background: var(--accent); color: #fff; font-size: 19px; cursor: pointer; }
     .composer button:disabled { opacity: .45; cursor: not-allowed; }
+    .composer .composer-upload { display: grid; width: 46px; height: 46px; flex: 0 0 46px; place-items: center; border: 1px solid var(--line); background: var(--accent-soft); color: var(--accent); transition: border-color .18s ease, background .18s ease, transform .18s ease; }
+    .composer .composer-upload:hover:not(:disabled) { transform: translateY(-1px); border-color: var(--accent); background: color-mix(in srgb, var(--accent-soft) 70%, white); }
+    .composer .composer-upload:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 25%, transparent); outline-offset: 2px; }
+    .composer-upload svg { width: 20px; height: 20px; }
     .composer-hint { margin: 8px 2px 0; color: var(--muted); font-size: 10px; }
     #status { display: none; margin: 0; padding: 10px 16px; border-top: 1px solid var(--line); background: var(--accent-soft); color: var(--ink); font-size: 12px; line-height: 1.55; }
     #status:not(:empty) { display: block; }
@@ -481,7 +478,7 @@
           <h1 data-copy="title">현장의 기록을,<br><em>보고서의 완성으로.</em></h1>
           <p class="hero-description" data-copy="description">실습 중 적어 둔 메모를 입력해 주세요. AIDE가 핵심 내용을 정리해 현장 실습 보고서 초안 작성을 도와드려요.</p>
           <div class="hero-meta"><span data-copy="metaOne">01 실습 메모 입력</span><span data-copy="metaTwo">02 함께 다듬고 완성</span></div>
-          <button class="waiting-game__button waiting-game__button--primary return-to-game" id="return-to-game" type="button" hidden>게임 화면으로 돌아가기</button>
+          <button class="waiting-game__button waiting-game__button--primary return-to-game" id="return-to-game" type="button" hidden>전체 화면으로 돌아가기</button>
         </div>
         <div class="assistant-workspace">
           <section class="chat-card" aria-label="AIDE 현장 실습 보고서 대화창">
@@ -489,10 +486,10 @@
             <div id="webchat" aria-label="대화 내용"></div>
             <div class="chat-foot">
               <p class="work-status" id="work-status" aria-live="polite">실습 내용을 적거나 예시를 골라 시작해 보세요.</p>
-              <p class="file-upload-hint">사용 중인 양식이 있다면 Word 파일(.doc 또는 .docx)로 업로드해 주세요.</p>
               <div class="examples" aria-label="예시 요청"><button class="chip" type="button" data-example-index="0">오늘 실습 메모 정리하기</button><button class="chip" type="button" data-example-index="1">기억에 남는 경험 기록하기</button><button class="chip" type="button" data-example-index="2">보고서 문장 다듬기</button></div>
               <div class="suggestions" aria-label="빠른 요청"><button class="chip" type="button" data-prompt="오늘 실습에서 한 업무를 보고서 초안으로 정리해줘">보고서 초안 정리 →</button><button class="chip" type="button" data-prompt="이 메모를 자연스러운 문장으로 다듬어줘">문장 다듬기 →</button><button class="chip" type="button" data-prompt="실습 내용을 항목별로 정리해줘">항목별 정리 →</button></div>
-              <form class="composer" id="composer"><input id="message" type="text" autocomplete="off" placeholder="오늘의 실습 내용을 편하게 적어주세요..." aria-label="메시지 입력" data-copy-placeholder="placeholder" disabled><button id="send" type="submit" aria-label="메시지 보내기" disabled>↑</button></form>
+              <form class="composer" id="composer"><button class="composer-upload" id="template-upload" type="button" aria-label="Word 양식 업로드" title="Word 양식 업로드" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"></path><path d="M5 13.5v4A2.5 2.5 0 0 0 7.5 20h9a2.5 2.5 0 0 0 2.5-2.5v-4"></path></svg></button><input id="template-file" type="file" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden><input id="message" type="text" autocomplete="off" placeholder="오늘의 실습 내용을 편하게 적어주세요..." aria-label="메시지 입력" data-copy-placeholder="placeholder" disabled><button id="send" type="submit" aria-label="메시지 보내기" disabled>↑</button></form>
+              <p class="file-upload-hint">사용 중인 양식이 있다면 Word 파일(.doc 또는 .docx)로 업로드해 주세요.</p>
               <p class="composer-hint" data-copy="hint">메모를 바탕으로 초안을 만들고, 대화로 내용을 다듬을 수 있어요.</p>
               <p class="composer-hint">새로고침하거나 페이지를 떠나면 대화 내용이 초기화돼요.</p>
             </div>
@@ -564,6 +561,8 @@
     const status = document.getElementById("status");
     const messageInput = document.getElementById("message");
     const sendButton = document.getElementById("send");
+    const templateUploadButton = document.getElementById("template-upload");
+    const templateFileInput = document.getElementById("template-file");
     const workStatus = document.getElementById("work-status");
     const selectedDesign = document.documentElement.getAttribute("data-design");
     const COPY = {
@@ -607,6 +606,7 @@
     }
 
     let directLine;
+    let webChatStore;
     let localPreview = false;
     let waitingForReport = false;
     let reportFlowStage = "idle";
@@ -1035,6 +1035,31 @@
       window.location.reload();
     });
     messageInput.addEventListener("input", updateUnloadWarning);
+    templateUploadButton.addEventListener("click", () => templateFileInput.click());
+    templateFileInput.addEventListener("change", () => {
+      const file = templateFileInput.files && templateFileInput.files[0];
+      if (!file) return;
+      templateFileInput.value = "";
+      if (!/\.docx?$/i.test(file.name)) {
+        setWorking("Word 파일(.doc 또는 .docx)만 업로드할 수 있어요.");
+        return;
+      }
+      if (!webChatStore) {
+        setWorking("채팅에 연결된 뒤 Word 파일을 업로드할 수 있어요.");
+        return;
+      }
+      hasUserMessage = true;
+      updateUnloadWarning();
+      showGameAfterFirstMessage();
+      showPendingResponseStatus();
+      webChatStore.dispatch({
+        type: "WEB_CHAT/SEND_MESSAGE",
+        payload: {
+          text: "첨부한 Word 양식을 보고서 작성에 사용해 주세요.",
+          attachments: [{ blob: file }]
+        }
+      });
+    });
     function showGameAfterFirstMessage() {
       if (!waitingGame.update) {
         document.body.classList.add("is-started");
@@ -1158,10 +1183,12 @@
           if (action.type === "DIRECT_LINE/CONNECT_FULFILLED") {
             messageInput.disabled = false;
             sendButton.disabled = false;
+            templateUploadButton.disabled = false;
             setWorking("연결됐어요. 아이디어를 들려주세요.");
           }
           return result;
         });
+        webChatStore = store;
         directLine.postActivity({ type: "event", name: "startConversation", from: { id: "user" } }).subscribe({
           error: () => setWorking("첫 인사를 요청하지 못했어요. 메시지를 입력해 대화를 시작해 주세요.")
         });
@@ -1192,11 +1219,8 @@
             bubbleTextColor: css.getPropertyValue("--ink").trim(),
             bubbleFromUserTextColor: css.getPropertyValue("--ink").trim(),
             sendBoxBackground: css.getPropertyValue("--card").trim(),
-            hideSendBox: false,
-            hideUploadButton: false,
-            uploadAccept: ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            uploadMultiple: false,
-            sendAttachmentOn: "attach",
+            hideSendBox: true,
+            hideUploadButton: true,
             paddingRegular: 16,
             paddingWide: 24
           }
