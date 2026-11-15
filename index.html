@@ -109,11 +109,12 @@
     .chip:hover { transform: translateY(-2px); border-color: var(--accent); background: var(--accent-soft); }
     .work-status { margin: 0 0 12px; padding: 10px 12px; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px; background: var(--accent-soft); color: var(--ink); font-size: 14px; font-weight: 600; line-height: 1.5; word-break: keep-all; }
     .work-status.is-pending { border-color: var(--accent); font-weight: 750; }
-    .template-choice { margin: 0 0 12px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--accent-soft); }
+    .template-choice { width: min(420px, calc(100% - 32px)); margin: 12px 16px 0; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); box-shadow: 0 3px 12px rgba(30, 55, 60, .06); }
     .template-choice[hidden] { display: none !important; }
-    .template-choice__question { margin: 0 0 8px; color: var(--ink); font-size: 13px; font-weight: 700; }
+    .template-choice__question { margin: 0 0 10px; color: var(--ink); font-size: 14px; font-weight: 700; }
     .template-choice__actions { display: flex; flex-wrap: wrap; gap: 7px; }
-    .template-choice__actions .chip { background: var(--card); }
+    .template-choice__actions .chip { border-color: var(--accent); background: var(--accent); color: #fff; }
+    .template-choice__actions .chip:hover { background: color-mix(in srgb, var(--accent) 86%, #000); }
     .file-upload-hint { margin: 8px 2px 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
     .assistant-workspace { min-width: 0; }
     .waiting-game[hidden] { display: none !important; }
@@ -489,16 +490,16 @@
           <section class="chat-card" aria-label="AIDE 현장 실습 보고서 대화창">
             <div class="window-bar"><i class="window-dot"></i><i class="window-dot"></i><i class="window-dot"></i><span class="window-label" data-copy="chatTitle">AIDE 현장 실습 보고서 도우미</span><button class="chat-reload-logo" type="button" data-reload aria-label="AIDE 페이지 새로고침" title="새로고침"><span class="logo-mark">A</span><span>AIDE</span></button></div>
             <div id="webchat" aria-label="대화 내용"></div>
+            <section class="template-choice" id="template-choice" aria-label="보고서 양식 확인" role="group" hidden>
+              <p class="template-choice__question" id="template-choice-question">사용 중인 보고서 양식이 있나요?</p>
+              <div class="template-choice__actions">
+                <button class="chip" id="template-choice-yes" type="button">네, 업로드할게요</button>
+                <button class="chip" id="template-choice-no" type="button">아니요, 기본 양식으로 할게요</button>
+              </div>
+            </section>
             <div class="chat-foot">
               <p class="work-status" id="work-status" aria-live="polite">실습 내용을 적거나 예시를 골라 시작해 보세요.</p>
               <div class="examples" aria-label="예시 요청"><button class="chip" type="button" data-example-index="0">오늘 실습 메모 정리하기</button><button class="chip" type="button" data-example-index="1">기억에 남는 경험 기록하기</button><button class="chip" type="button" data-example-index="2">보고서 문장 다듬기</button></div>
-              <section class="template-choice" id="template-choice" aria-label="보고서 양식 확인" hidden>
-                <p class="template-choice__question" id="template-choice-question">사용 중인 보고서 양식이 있나요?</p>
-                <div class="template-choice__actions">
-                  <button class="chip" id="template-choice-yes" type="button">네, 업로드할게요</button>
-                  <button class="chip" id="template-choice-no" type="button">아니요, 기본 양식으로 할게요</button>
-                </div>
-              </section>
               <div class="suggestions" aria-label="빠른 요청"><button class="chip" type="button" data-prompt="오늘 실습에서 한 업무를 보고서 초안으로 정리해줘">보고서 초안 정리 →</button><button class="chip" type="button" data-prompt="이 메모를 자연스러운 문장으로 다듬어줘">문장 다듬기 →</button><button class="chip" type="button" data-prompt="실습 내용을 항목별로 정리해줘">항목별 정리 →</button></div>
               <form class="composer" id="composer"><button class="composer-upload" id="template-upload" type="button" aria-label="Word 양식 업로드" title="Word 양식 업로드" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"></path><path d="M5 13.5v4A2.5 2.5 0 0 0 7.5 20h9a2.5 2.5 0 0 0 2.5-2.5v-4"></path></svg></button><input id="template-file" type="file" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden><input id="message" type="text" autocomplete="off" placeholder="오늘의 실습 내용을 편하게 적어주세요..." aria-label="메시지 입력" data-copy-placeholder="placeholder" disabled><button id="send" type="submit" aria-label="메시지 보내기" disabled>↑</button></form>
               <p class="file-upload-hint">사용 중인 양식이 있다면 Word 파일(.doc 또는 .docx)로 업로드해 주세요.</p>
